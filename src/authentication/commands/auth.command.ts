@@ -5,11 +5,12 @@
  */
 import { Command, CommandRunner } from 'nest-commander';
 import { AuthAddCommand } from './auth-add.command';
+import { AuthRemoveCommand } from './auth-remove.command';
 
 @Command({
   name: 'auth',
   description: 'Manage ServiceNow connections.',
-  subCommands: [AuthAddCommand],
+  subCommands: [AuthAddCommand, AuthRemoveCommand],
 })
 export class AuthCommand extends CommandRunner {
   async run(): Promise<void> {

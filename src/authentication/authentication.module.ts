@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { PromptService } from './prompt.service';
 import { AuthCommand } from './commands/auth.command';
 import { AuthAddCommand } from './commands/auth-add.command';
+import { AuthRemoveCommand } from './commands/auth-remove.command';
 
 @Module({
   imports: [DatabaseModule],
@@ -21,6 +22,7 @@ import { AuthAddCommand } from './commands/auth-add.command';
     PromptService,
     AuthCommand,
     AuthAddCommand,
+    AuthRemoveCommand,
   ],
 })
 export class AuthenticationModule {}

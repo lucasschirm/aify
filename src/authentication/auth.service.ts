@@ -123,4 +123,29 @@ export class AuthService {
     };
     return { auth, snAuth };
   }
+
+  /** Return every saved connection (order by alias). */
+  async list(): Promise<Auth[]> {
+    return Auth.findAll({ order: [['alias', 'ASC']] });
+  }
+
+  /** Delete an alias's metadata row and the keychain password. */
+  async remove(alias: string): Promise<void> {
+    const auth = await Auth.findOne({ where: { alias } });
+    if (!auth) {
+      throw new Error(`Alias "${alias}" not found.`);
+    }
+    await auth.destroy();
+    await this.credentials.deletePassword(alias);
+  }
+
+  /** Promote an alias to the single global current connection (the model hook clears others). */
+  async setCurrent(alias: string): Promise<Auth> {
+    const auth = await Auth.findOne({ where: { alias } });
+    if (!auth) {
+      throw new Error(`Alias "${alias}" not found.`);
+    }
+    auth.isCurrent = true;
+    return auth.save();
+  }
 }

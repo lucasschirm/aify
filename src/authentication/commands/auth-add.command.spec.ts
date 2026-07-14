@@ -1,31 +1,26 @@
 /**
  * @file auth-add.command.spec.ts
- * Tests for AuthAddCommand — mocked AuthService, PromptService, and TableApiClient.
+ * Tests for AuthAddCommand — manually instantiated with mocked deps.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Test } from '@nestjs/testing';
 import { AuthAddCommand } from './auth-add.command';
-import { AuthService } from '../auth.service';
-import { PromptService } from '../prompt.service';
-import { AuthError } from '../../api/table-api.client';
+import type { AuthService } from '../auth.service';
+import type { PromptService } from '../prompt.service';
+import { AuthError, ConnectionError } from '../../api/table-api.client';
 
 describe('AuthAddCommand', () => {
   let command: AuthAddCommand;
   let authService: { add: ReturnType<typeof vi.fn> };
   let prompt: { input: ReturnType<typeof vi.fn>; password: ReturnType<typeof vi.fn> };
 
-  beforeEach(async () => {
+  beforeEach(() => {
     authService = { add: vi.fn().mockResolvedValue({ alias: 'prod' }) };
     prompt = { input: vi.fn(), password: vi.fn().mockResolvedValue('s3cret') };
 
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        AuthAddCommand,
-        { provide: AuthService, useValue: authService },
-        { provide: PromptService, useValue: prompt },
-      ],
-    }).compile();
-    command = moduleRef.get(AuthAddCommand);
+    command = new AuthAddCommand(
+      authService as unknown as AuthService,
+      prompt as unknown as PromptService,
+    );
   });
 
   it('masks the password prompt and forwards flags without any --password', async () => {
@@ -45,7 +40,7 @@ describe('AuthAddCommand', () => {
       .mockResolvedValueOnce('acme.service-now.com')
       .mockResolvedValueOnce('admin');
 
-    await command.run([], {});
+    await command.run([]);
     expect(prompt.input).toHaveBeenCalledTimes(3);
     expect(authService.add).toHaveBeenCalledWith(
       { alias: 'prod', instanceUrl: 'acme.service-now.com', username: 'admin', password: 's3cret' },
