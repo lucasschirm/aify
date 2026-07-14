@@ -1,0 +1,22 @@
+{
+  "defaultAction": "allow",
+  "allow": [
+    "read:*",
+    "grep",
+    "find",
+    "write:plans/*_PLAN.md",
+    "edit:plans/*_PLAN.md"
+  ],
+  "ask": [
+    "bash:*",
+    "write:*",
+    "edit:*",
+    "mcp:*"
+  ],
+  "deny": [
+    "bash:rm -rf*",
+    "bash:sudo *",
+    "write:.env*",
+    "edit:.env*"
+  ]
+}
