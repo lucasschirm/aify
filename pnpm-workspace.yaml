@@ -1,2 +1,2 @@
 allowBuilds:
-  deasync: set this to true or false
+  deasync: true

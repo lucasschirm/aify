@@ -30,7 +30,8 @@
     "build": "nest build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "lint": "biome ci ."
+    "lint": "biome ci .",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@nestjs/common": "^11.1.28",
@@ -44,6 +45,7 @@
     "sequelize-typescript": "^2.1.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.3",
     "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.1.0",
     "@types/node": "^26.1.1",

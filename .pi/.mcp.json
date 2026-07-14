@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "nestjs": {
+      "command": "node",
+      "args": ["/Users/lucascaixeta/Documents/luschi/mcp/NestJsMcp/dist/index.js"]
+    }
+  }
+}
