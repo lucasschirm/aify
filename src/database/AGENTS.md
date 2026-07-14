@@ -6,7 +6,8 @@ SQLite persistence for aify (Sequelize + sequelize-typescript + sqlite3).
 |------|---------|
 | `sequelize.factory.ts` | `buildSequelize(storagePath)` — builds a SQLite Sequelize instance and registers all models. Does NOT sync. |
 | `database.module.ts` | `DatabaseModule.forRoot(storagePath)` — provides the Sequelize instance (global) and runs `sync({ alter: true })` on init (never drops columns, OS-29). Exposes the `SEQUELIZE` token. |
-| `models/` | The Sequelize models: `Instance`, `Auth`, `Application` (added in TASK_008–010). |
+| `models/instance.model.ts` | `Instance` — a ServiceNow instance. `instance` VARCHAR(200) UNIQUE (host only); `url` VARCHAR(2048) (full URL). No timestamps. |
+| `models/auth.model.ts` | `Auth` — credential METADATA only (no password; keytar holds it, OS-17). `alias` UNIQUE globally (OS-16); `instanceId` FK→Instance; `isCurrent` global flag with a `@BeforeSave` hook that flips all other rows false; `lastUsedAt`. |
 
 Tests use in-memory SQLite (`:memory:`). The DB file at runtime is `~/.aify/aifydb.sqlite3`,
 seeded from the packaged `templates/template_db.sqlite3`.

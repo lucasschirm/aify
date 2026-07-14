@@ -7,6 +7,7 @@
  */
 import { Sequelize } from 'sequelize-typescript';
 import { Instance } from './models/instance.model';
+import { Auth } from './models/auth.model';
 
 /**
  * Create a SQLite-backed Sequelize instance and register aify's models.
@@ -19,7 +20,8 @@ export function buildSequelize(storagePath: string): Sequelize {
     dialect: 'sqlite',
     storage: storagePath,
     logging: false,
-    // Models: Instance (TASK_008). Auth (TASK_009) and Application (TASK_010) will be added here.
-    models: [Instance],
+    // Models: Instance (TASK_008), Auth (TASK_009).
+    // Application (TASK_010) will be added here.
+    models: [Instance, Auth],
   });
 }
