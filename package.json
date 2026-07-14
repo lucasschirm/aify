@@ -36,6 +36,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.5.2",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
     "chokidar": "^5.0.0",
