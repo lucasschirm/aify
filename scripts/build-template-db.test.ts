@@ -6,8 +6,8 @@ import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Sequelize } from 'sequelize-typescript';
-import { buildTemplateDb } from './build-template-db';
 import { describe, expect, it } from 'vitest';
+import { buildTemplateDb } from './build-template-db';
 
 describe('buildTemplateDb', () => {
   it('produces a sqlite file whose tables match the models', async () => {

@@ -6,10 +6,6 @@
  */
 import type { ColumnType, TrackedTable } from '../tracked-tables/tracked-tables.types';
 
-// Import RetryPolicy type-only — the module won't exist until the api module is built.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { AifyProjectConfig as _AifyConfigMarker } from '..';
-
 export interface AifyProjectConfig {
   hot?: { pullInterval: number };
   project?: { scopes: { sysId: string; scope: string }[] };

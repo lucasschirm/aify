@@ -2,12 +2,13 @@
  * @file auth-update.command.spec.ts
  * Tests for AuthUpdateCommand — mocked CredentialStore and PromptService.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { Test } from '@nestjs/testing';
-import { AuthUpdateCommand } from './auth-update.command';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../auth.service';
 import { CredentialStore } from '../credential-store.service';
 import { PromptService } from '../prompt.service';
+import { AuthUpdateCommand } from './auth-update.command';
 
 describe('AuthUpdateCommand', () => {
   let command: AuthUpdateCommand;

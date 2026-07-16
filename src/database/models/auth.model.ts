@@ -26,7 +26,7 @@ import { Instance } from './instance.model';
 export class Auth extends Model {
   @PrimaryKey
   @AutoIncrement
-  @Column({ type: DataType.INTEGER.UNSIGNED })
+  @Column({ type: DataType.INTEGER })
   declare id: number;
 
   /** Globally unique alias identifying this credential (OS-16). */
@@ -41,7 +41,7 @@ export class Auth extends Model {
 
   @ForeignKey(() => Instance)
   @AllowNull(false)
-  @Column({ type: DataType.INTEGER.UNSIGNED })
+  @Column({ type: DataType.INTEGER })
   declare instanceId: number;
 
   /**

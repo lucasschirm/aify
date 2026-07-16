@@ -20,7 +20,7 @@ import {
 export class Application extends Model {
   @PrimaryKey
   @AutoIncrement
-  @Column({ type: DataType.INTEGER.UNSIGNED })
+  @Column({ type: DataType.INTEGER })
   declare id: number;
 
   /** Normalized application scope, e.g. 'x_acme_app'. */

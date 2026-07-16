@@ -3,10 +3,10 @@
  * Tests for AuthAddCommand — manually instantiated with mocked deps.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthAddCommand } from './auth-add.command';
+import { AuthError, ConnectionError } from '../../api/table-api.client';
 import type { AuthService } from '../auth.service';
 import type { PromptService } from '../prompt.service';
-import { AuthError, ConnectionError } from '../../api/table-api.client';
+import { AuthAddCommand } from './auth-add.command';
 
 describe('AuthAddCommand', () => {
   let command: AuthAddCommand;

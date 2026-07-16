@@ -5,10 +5,11 @@
  * creates an empty config when none exists, and manages scopes and the auth-failure counter.
  * aify makes no .gitignore changes (OS-10).
  */
-import { Injectable } from '@nestjs/common';
+
 import { readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { Injectable } from '@nestjs/common';
 import type { AifyProjectConfig } from './project-config.types';
 
 const CONFIG_FILE = '.aify.config.json';

@@ -5,16 +5,19 @@
  */
 import { Module } from '@nestjs/common';
 import { TableApiClient } from '../api/table-api.client';
+import { ConfigModule } from '../config/config.module';
 import { DatabaseModule } from '../database/database.module';
-import { CredentialStore } from './credential-store.service';
+import { UiModule } from '../ui/ui.module';
 import { AuthService } from './auth.service';
-import { PromptService } from './prompt.service';
 import { AuthCommand } from './commands/auth.command';
 import { AuthAddCommand } from './commands/auth-add.command';
 import { AuthRemoveCommand } from './commands/auth-remove.command';
+import { AuthUpdateCommand } from './commands/auth-update.command';
+import { CredentialStore } from './credential-store.service';
+import { PromptService } from './prompt.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, ConfigModule, UiModule],
   providers: [
     TableApiClient,
     CredentialStore,
@@ -23,6 +26,8 @@ import { AuthRemoveCommand } from './commands/auth-remove.command';
     AuthCommand,
     AuthAddCommand,
     AuthRemoveCommand,
+    AuthUpdateCommand,
   ],
+  exports: [TableApiClient, AuthService, PromptService],
 })
 export class AuthenticationModule {}

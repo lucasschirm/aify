@@ -4,7 +4,11 @@
  * endpoint rules: versioned /api/now/v2/table paths, Link rel=next pagination, and (added in
  * later cycles) RetryPolicy-driven retry with a never-retried 401 (OS-23).
  */
+import { Optional } from '@nestjs/common';
+import type { GlobalConfigService } from '../config/global/global-config.service';
 import type { ListOptions, RetryPolicy, SnAuth, SnRecord } from './table-api.types';
+
+export type { SnAuth, SnRecord } from './table-api.types';
 
 const DEFAULT_RETRY: RetryPolicy = { maxAttempts: 3, delayMs: 2000 };
 
@@ -31,7 +35,10 @@ export class ConnectionError extends Error {
 }
 
 export class TableApiClient {
-  constructor(private readonly retry: RetryPolicy = DEFAULT_RETRY) {}
+  constructor(
+    @Optional() private readonly retry: RetryPolicy = DEFAULT_RETRY,
+    @Optional() private readonly globalConfig?: GlobalConfigService,
+  ) {}
 
   /** GET a list of records, following Link rel="next" pagination until exhausted. */
   async list(auth: SnAuth, table: string, options: ListOptions = {}): Promise<SnRecord[]> {
@@ -69,12 +76,15 @@ export class TableApiClient {
     let lastError: ConnectionError | undefined;
     for (let attempt = 1; attempt <= this.retry.maxAttempts; attempt += 1) {
       let response: Response;
+      await this.globalConfig?.debug(`GET ${url}`);
       try {
         response = await fetch(url, { method: 'GET', headers });
       } catch (cause) {
+        await this.globalConfig?.debug(`→ network error ${url}: ${(cause as Error).message}`);
         lastError = new ConnectionError((cause as Error).message);
         break;
       }
+      await this.globalConfig?.debug(`→ ${response.status} ${url}`);
       if (response.status === 401) {
         throw new AuthError('Authentication failed (401). Check the username and password.');
       }
@@ -142,12 +152,15 @@ export class TableApiClient {
       Accept: 'application/json',
       ...(init.headers as Record<string, string> | undefined),
     };
+    const method = init.method ?? 'GET';
     let lastError: ConnectionError | undefined;
     for (let attempt = 1; attempt <= this.retry.maxAttempts; attempt += 1) {
       let response: Response;
+      await this.globalConfig?.debug(`${method} ${url}`);
       try {
         response = await fetch(url, { ...init, headers });
       } catch (cause) {
+        await this.globalConfig?.debug(`→ network error ${url}: ${(cause as Error).message}`);
         lastError = new ConnectionError((cause as Error).message);
         if (attempt < this.retry.maxAttempts) {
           await this.delay(this.retry.delayMs);
@@ -155,6 +168,7 @@ export class TableApiClient {
         }
         throw lastError;
       }
+      await this.globalConfig?.debug(`→ ${response.status} ${url}`);
       if (response.status === 401) {
         throw new AuthError('Authentication failed (401). Check the username and password.');
       }

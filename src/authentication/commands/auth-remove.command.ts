@@ -4,11 +4,13 @@
  * If it was the current connection, prompts to pick a new current alias, or warns when none
  * remain (subsequent syncs need one).
  */
-import { Command, CommandRunner } from 'nest-commander';
-import type { AuthService } from '../auth.service';
-import type { PromptService } from '../prompt.service';
+import { CommandRunner, SubCommand } from 'nest-commander';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { AuthService } from '../auth.service';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { PromptService } from '../prompt.service';
 
-@Command({
+@SubCommand({
   name: 'remove',
   arguments: '<alias>',
   description: 'Remove a connection and its stored password.',

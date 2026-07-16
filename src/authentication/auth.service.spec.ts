@@ -3,13 +3,15 @@
  * Tests for AuthService — testConnection, add, current. Uses in-memory SQLite,
  * mocked TableApiClient and CredentialStore.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { Sequelize } from 'sequelize-typescript';
-import { Instance } from '../database/models/instance.model';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AuthError, type SnAuth, type TableApiClient } from '../api/table-api.client';
 import { Auth } from '../database/models/auth.model';
+import { Instance } from '../database/models/instance.model';
+import type { SpinnerService } from '../ui/spinner.service';
 import { AuthService, parseInstance } from './auth.service';
 import type { CredentialStore } from './credential-store.service';
-import { type TableApiClient, AuthError, type SnAuth } from '../api/table-api.client';
 
 describe('parseInstance', () => {
   it('derives the host and a normalized trailing-slash URL', () => {
@@ -54,10 +56,19 @@ describe('AuthService', () => {
     await sequelize.sync({ force: true });
     tableApi = { list: vi.fn().mockResolvedValue([]) };
     credentials = { setPassword: vi.fn(), getPassword: vi.fn(), deletePassword: vi.fn() };
+    const spinner = {
+      start: vi.fn(),
+      text: vi.fn(),
+      succeed: vi.fn(),
+      fail: vi.fn(),
+      info: vi.fn(),
+      stop: vi.fn(),
+    };
     service = new AuthService(
       tableApi as unknown as TableApiClient,
       credentials as unknown as CredentialStore,
       sequelize,
+      spinner as unknown as SpinnerService,
     );
   });
 

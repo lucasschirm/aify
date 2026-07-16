@@ -3,17 +3,25 @@
  * Tests for AuthRemoveCommand — mocked AuthService and PromptService.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthRemoveCommand } from './auth-remove.command';
 import type { AuthService } from '../auth.service';
 import type { PromptService } from '../prompt.service';
+import { AuthRemoveCommand } from './auth-remove.command';
 
 describe('AuthRemoveCommand', () => {
   let command: AuthRemoveCommand;
-  let authService: { list: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn>; setCurrent: ReturnType<typeof vi.fn> };
+  let authService: {
+    list: ReturnType<typeof vi.fn>;
+    remove: ReturnType<typeof vi.fn>;
+    setCurrent: ReturnType<typeof vi.fn>;
+  };
   let prompt: { select: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    authService = { list: vi.fn(), remove: vi.fn().mockResolvedValue(undefined), setCurrent: vi.fn() };
+    authService = {
+      list: vi.fn(),
+      remove: vi.fn().mockResolvedValue(undefined),
+      setCurrent: vi.fn(),
+    };
     prompt = { select: vi.fn() };
 
     command = new AuthRemoveCommand(

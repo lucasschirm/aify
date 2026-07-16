@@ -4,20 +4,34 @@
  * templates/ directory, exposes canonical paths (db, track_tables), and appends
  * per-day plain-text log lines (OS-19). Paths resolve via os.homedir() (never "~").
  */
-import { Injectable } from '@nestjs/common';
+
 import { constants as fsConstants } from 'node:fs';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { Injectable, Optional } from '@nestjs/common';
 
 @Injectable()
 export class GlobalConfigService {
   /** Directory holding the shipped template_db.sqlite3 (packaged with the CLI). */
   private readonly templatesDir: string;
 
-  constructor(templatesDir?: string) {
+  /** Whether verbose (`--verbose`) logging is enabled for the current invocation. */
+  private verbose = false;
+
+  constructor(@Optional() templatesDir?: string) {
     // Compiled to dist/config/global/; templates/ ships at the package root.
     this.templatesDir = templatesDir ?? path.join(__dirname, '..', '..', '..', 'templates');
+  }
+
+  /** Enable or disable verbose mode for the current CLI invocation. */
+  setVerbose(value: boolean): void {
+    this.verbose = value;
+  }
+
+  /** Whether verbose (`--verbose`) logging is currently enabled. */
+  isVerbose(): boolean {
+    return this.verbose;
   }
 
   /** Absolute path to ~/.aify (resolved fresh so tests can relocate HOME). */
@@ -72,5 +86,15 @@ export class GlobalConfigService {
     const day = new Date().toISOString().slice(0, 10);
     const file = path.join(this.logsDir(), `${day}.log`);
     await fs.appendFile(file, `${message}\n`, 'utf8');
+  }
+
+  /**
+   * Append a debug message (prefixed with `DEBUG: `) to the per-day log file, but
+   * only when verbose mode is enabled via `--verbose`. When verbose is off this is
+   * a no-op — nothing is written and no file is created.
+   */
+  async debug(message: string): Promise<void> {
+    if (!this.verbose) return;
+    await this.log(`DEBUG: ${message}`);
   }
 }

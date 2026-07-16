@@ -5,19 +5,23 @@
  *
  * Note: AuthService.updatePassword is a simple wrapper around `credentials.setPassword(alias, newPassword)`.
  */
-import { Command, CommandRunner, Option } from 'nest-commander';
-import type { AuthService } from '../auth.service';
-import type { CredentialStore } from '../credential-store.service';
-import type { PromptService } from '../prompt.service';
+import { CommandRunner, Option, SubCommand } from 'nest-commander';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { AuthService } from '../auth.service';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { CredentialStore } from '../credential-store.service';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { PromptService } from '../prompt.service';
 
 interface AuthUpdateOptions {
   alias?: string;
 }
 
-@Command({ name: 'update', description: 'Update your ServiceNow credentials.' })
+@SubCommand({ name: 'update', description: 'Update your ServiceNow credentials.' })
 export class AuthUpdateCommand extends CommandRunner {
   constructor(
-    private readonly authService: AuthService,
+    // Injected for DI metadata; not referenced in this command yet.
+    _authService: AuthService,
     private readonly credentials: CredentialStore,
     private readonly prompt: PromptService,
   ) {
@@ -32,7 +36,10 @@ export class AuthUpdateCommand extends CommandRunner {
     console.log(`Credentials for "${alias}" updated.`);
   }
 
-  @Option({ flags: '--alias <alias>', description: 'Connection alias whose credentials to update.' })
+  @Option({
+    flags: '--alias <alias>',
+    description: 'Connection alias whose credentials to update.',
+  })
   parseAlias(value: string): string {
     return value;
   }

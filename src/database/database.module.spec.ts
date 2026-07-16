@@ -3,8 +3,7 @@
  * Tests for DatabaseModule bootstrap and sync behavior.
  */
 import { Test } from '@nestjs/testing';
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
-import { Sequelize } from 'sequelize-typescript';
+import { Column, DataType, Model, Sequelize, Table } from 'sequelize-typescript';
 import { describe, expect, it } from 'vitest';
 import { DatabaseModule, SEQUELIZE } from './database.module';
 

@@ -2,10 +2,11 @@
  * @file auth.model.spec.ts
  * Tests for the Auth Sequelize model.
  */
-import { buildSequelize } from '../sequelize.factory';
-import { Instance } from './instance.model';
-import { Auth } from './auth.model';
+
 import { describe, expect, it } from 'vitest';
+import { buildSequelize } from '../sequelize.factory';
+import { Auth } from './auth.model';
+import { Instance } from './instance.model';
 
 async function seedInstance(): Promise<Instance> {
   return Instance.create({

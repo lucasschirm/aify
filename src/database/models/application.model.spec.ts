@@ -2,9 +2,10 @@
  * @file application.model.spec.ts
  * Tests for the Application Sequelize model.
  */
+
+import { describe, expect, it } from 'vitest';
 import { buildSequelize } from '../sequelize.factory';
 import { Application } from './application.model';
-import { describe, expect, it } from 'vitest';
 
 describe('Application model', () => {
   it('persists scope, sysId and displayValue with no instance link (OS-20)', async () => {

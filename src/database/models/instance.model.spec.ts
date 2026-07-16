@@ -2,9 +2,10 @@
  * @file instance.model.spec.ts
  * Tests for the Instance Sequelize model.
  */
+
+import { describe, expect, it } from 'vitest';
 import { buildSequelize } from '../sequelize.factory';
 import { Instance } from './instance.model';
-import { describe, expect, it } from 'vitest';
 
 describe('Instance model', () => {
   it('stores only the host in `instance` and the full URL in `url`', async () => {

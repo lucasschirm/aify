@@ -4,8 +4,9 @@
  * that tests can replace it with a mocked provider instead of a real TTY. Passwords are always
  * masked; there is no `--password` flag anywhere in the CLI (OS-17).
  */
-import { Injectable } from '@nestjs/common';
+
 import { confirm, input, password, select } from '@inquirer/prompts';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class PromptService {

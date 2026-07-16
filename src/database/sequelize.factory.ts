@@ -6,9 +6,9 @@
  * template-db build script).
  */
 import { Sequelize } from 'sequelize-typescript';
-import { Instance } from './models/instance.model';
-import { Auth } from './models/auth.model';
 import { Application } from './models/application.model';
+import { Auth } from './models/auth.model';
+import { Instance } from './models/instance.model';
 
 /**
  * Create a SQLite-backed Sequelize instance and register aify's models.

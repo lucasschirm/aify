@@ -1,2 +1,6 @@
 allowBuilds:
+  '@swc/core': true
   deasync: true
+  keytar: true
+  sqlite3: true
+  xxhash-addon: true

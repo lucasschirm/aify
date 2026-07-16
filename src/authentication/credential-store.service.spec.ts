@@ -3,8 +3,9 @@
  * Unit tests for CredentialStore (keytar wrapper). keytar is mocked —
  * tests never touch a real OS keychain.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import * as keytar from 'keytar';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CredentialStore } from './credential-store.service';
 
 // Mock keytar so tests never read/write the real OS keychain.

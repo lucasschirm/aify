@@ -5,7 +5,7 @@
  * which parses that future ||/|-delimited file and strips a trailing sys_id from each table
  * name (split('_') → drop last → join('_'); sys_ids contain no '_').
  */
-import type { ColumnType, TrackConfig } from './tracked-tables.types';
+import type { ColumnType, TrackConfig, TrackedTable } from './tracked-tables.types';
 
 /** column_types from the spec's track_tables.json example (S1/S3). */
 const DEFAULT_COLUMN_TYPES: Record<string, ColumnType> = {

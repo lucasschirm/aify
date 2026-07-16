@@ -6,11 +6,16 @@
  * unique and `is_current` is a global flag (OS-16).
  */
 import { Injectable } from '@nestjs/common';
-import type { Sequelize } from 'sequelize-typescript';
-import { Instance } from '../database/models/instance.model';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { Sequelize } from 'sequelize-typescript';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { type SnAuth, TableApiClient } from '../api/table-api.client';
 import { Auth } from '../database/models/auth.model';
-import type { CredentialStore } from './credential-store.service';
-import type { TableApiClient, SnAuth } from '../api/table-api.client';
+import { Instance } from '../database/models/instance.model';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { SpinnerService } from '../ui/spinner.service';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { CredentialStore } from './credential-store.service';
 
 /** Data captured by `aify auth add` before a connection is saved. */
 export interface AuthInput {
@@ -37,7 +42,9 @@ export class AuthService {
   constructor(
     private readonly tableApi: TableApiClient,
     private readonly credentials: CredentialStore,
-    private readonly sequelize: Sequelize,
+    // Injected for DI metadata; not referenced in this service yet.
+    _sequelize: Sequelize,
+    private readonly spinner: SpinnerService,
   ) {}
 
   /**
@@ -45,7 +52,14 @@ export class AuthService {
    * never retried) and ConnectionError from the Table API client.
    */
   async testConnection(snAuth: SnAuth): Promise<void> {
-    await this.tableApi.list(snAuth, 'sys_metadata', { limit: 1 });
+    this.spinner.start('Testing connection…');
+    try {
+      await this.tableApi.list(snAuth, 'sys_metadata', { limit: 1 });
+      this.spinner.succeed('Connection verified.');
+    } catch (err) {
+      this.spinner.fail('Connection failed.');
+      throw err;
+    }
   }
 
   /**

@@ -19,7 +19,7 @@ import {
 export class Instance extends Model {
   @PrimaryKey
   @AutoIncrement
-  @Column({ type: DataType.INTEGER.UNSIGNED })
+  @Column({ type: DataType.INTEGER })
   declare id: number;
 
   /** Host only, e.g. 'lucas.service-now.com' (no scheme, no path). */

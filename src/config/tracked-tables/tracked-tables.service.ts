@@ -5,17 +5,15 @@
  * (project) — so project settings win and nothing is lost (OS-15). Tables merge by name, their
  * columns by name, and column_types by spread (last writer wins).
  */
-import { Injectable } from '@nestjs/common';
+
 import { readFile } from 'node:fs/promises';
-import type { GlobalConfigService } from '../global/global-config.service';
-import type { ProjectConfigService } from '../project/project-config.service';
+import { Injectable } from '@nestjs/common';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { GlobalConfigService } from '../global/global-config.service';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { ProjectConfigService } from '../project/project-config.service';
 import { INTERIM_DEFAULT_TABLES } from './default-tables';
-import type {
-  ColumnType,
-  TrackConfig,
-  TrackedColumn,
-  TrackedTable,
-} from './tracked-tables.types';
+import type { ColumnType, TrackConfig, TrackedColumn, TrackedTable } from './tracked-tables.types';
 
 @Injectable()
 export class TrackedTablesService {

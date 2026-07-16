@@ -4,10 +4,12 @@
  * masked-prompts the password (no `--password` flag, OS-17), then delegates to AuthService.add.
  * On AuthError (401) it reports the failure; AuthService guarantees nothing was persisted.
  */
-import { Command, CommandRunner, Option } from 'nest-commander';
-import type { AuthService } from '../auth.service';
-import type { PromptService } from '../prompt.service';
+import { CommandRunner, Option, SubCommand } from 'nest-commander';
 import { AuthError } from '../../api/table-api.client';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { AuthService } from '../auth.service';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { PromptService } from '../prompt.service';
 
 interface AuthAddOptions {
   alias?: string;
@@ -16,7 +18,7 @@ interface AuthAddOptions {
   force?: boolean;
 }
 
-@Command({ name: 'add', description: 'Add a ServiceNow connection and store its credentials.' })
+@SubCommand({ name: 'add', description: 'Add a ServiceNow connection and store its credentials.' })
 export class AuthAddCommand extends CommandRunner {
   constructor(
     private readonly authService: AuthService,
