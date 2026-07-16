@@ -144,3 +144,4 @@ vite.config.ts.timestamp-*
 
 # Custom
 .pi-rules
+reference_docs/
