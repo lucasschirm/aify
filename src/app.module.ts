@@ -11,11 +11,18 @@ import { AuthenticationModule } from './authentication/authentication.module';
 import { ConfigModule } from './config/config.module';
 import { GlobalConfigService } from './config/global/global-config.service';
 import { DatabaseModule } from './database/database.module';
+import { SyncModule } from './sync/sync.module';
 
 const globalConfig = new GlobalConfigService();
 const dbPath = globalConfig.dbPath();
 
 @Module({
-  imports: [ConfigModule, DatabaseModule.forRoot(dbPath), AuthenticationModule, ApplicationModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule.forRoot(dbPath),
+    AuthenticationModule,
+    ApplicationModule,
+    SyncModule,
+  ],
 })
 export class AppModule {}
