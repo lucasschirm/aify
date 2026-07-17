@@ -7,7 +7,7 @@
 import { CommandRunner, Option, SubCommand } from 'nest-commander';
 import { AuthError, ConnectionError } from '../../api/table-api.client';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
-import { AuthService } from '../auth.service';
+import { AuthService, parseInstance } from '../auth.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { PromptService } from '../prompt.service';
 
@@ -30,12 +30,17 @@ export class AuthAddCommand extends CommandRunner {
   async run(_params: string[], options: AuthAddOptions = {}): Promise<void> {
     const alias = options.alias ?? (await this.prompt.input('Alias:'));
     const instance = options.instance ?? (await this.prompt.input('Instance (host or URL):'));
-    const username = options.username ?? (await this.prompt.input('Username:'));
-    const password = await this.prompt.password('Password:');
+
+    // ServiceNow share URLs may carry user_name/user_password query params; when present they
+    // are decoded by parseInstance and used to skip the corresponding prompts. Precedence is
+    // flag > URL query param > prompt, so an explicit --username still wins over the URL.
+    const { url, username: urlUsername, password: urlPassword } = parseInstance(instance);
+    const username = options.username ?? urlUsername ?? (await this.prompt.input('Username:'));
+    const password = urlPassword ?? (await this.prompt.password('Password:'));
 
     try {
       await this.authService.add(
-        { alias, instanceUrl: instance, username, password },
+        { alias, instanceUrl: url, username, password },
         options.force ?? false,
       );
       console.log(`Connection "${alias}" saved and set as current.`);

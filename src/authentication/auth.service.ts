@@ -26,15 +26,38 @@ export interface AuthInput {
 }
 
 /**
- * Split a user-supplied instance value into its unique host and a normalized full URL.
- * `https://acme.service-now.com` and `acme.service-now.com/` both yield
- * `{ host: 'acme.service-now.com', url: 'https://acme.service-now.com/' }`.
+ * Split a user-supplied instance value into its unique host, a normalized full URL, and any
+ * credentials embedded in the query string. `https://acme.service-now.com` and
+ * `acme.service-now.com/` both yield `{ host: 'acme.service-now.com', url: 'https://acme.service-now.com/' }`.
+ *
+ * ServiceNow share URLs (e.g. `https://acme.service-now.com/login.do?user_name=admin&user_password=…`)
+ * may carry `user_name` and/or `user_password` query params; when present they are decoded
+ * (percent-encoding is resolved by `URLSearchParams`) and returned so callers can skip the
+ * corresponding prompts. The normalized `url` never includes the query string. Either param
+ * may be absent; the corresponding field is then omitted from the result.
  */
-export function parseInstance(instanceUrl: string): { host: string; url: string } {
+export function parseInstance(instanceUrl: string): {
+  host: string;
+  url: string;
+  username?: string;
+  password?: string;
+} {
   const trimmed = instanceUrl.trim();
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   const parsed = new URL(withProtocol);
-  return { host: parsed.host, url: `${parsed.protocol}//${parsed.host}/` };
+  const result: { host: string; url: string; username?: string; password?: string } = {
+    host: parsed.host,
+    url: `${parsed.protocol}//${parsed.host}/`,
+  };
+  const username = parsed.searchParams.get('user_name');
+  const password = parsed.searchParams.get('user_password');
+  if (username !== null) {
+    result.username = username;
+  }
+  if (password !== null) {
+    result.password = password;
+  }
+  return result;
 }
 
 @Injectable()

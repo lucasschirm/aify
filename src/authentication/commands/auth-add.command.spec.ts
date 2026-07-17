@@ -29,7 +29,12 @@ describe('AuthAddCommand', () => {
     expect(prompt.password).toHaveBeenCalledWith(expect.any(String));
     expect(prompt.input).not.toHaveBeenCalled();
     expect(authService.add).toHaveBeenCalledWith(
-      { alias: 'prod', instanceUrl: 'acme.service-now.com', username: 'admin', password: 's3cret' },
+      {
+        alias: 'prod',
+        instanceUrl: 'https://acme.service-now.com/',
+        username: 'admin',
+        password: 's3cret',
+      },
       false,
     );
   });
@@ -43,7 +48,75 @@ describe('AuthAddCommand', () => {
     await command.run([]);
     expect(prompt.input).toHaveBeenCalledTimes(3);
     expect(authService.add).toHaveBeenCalledWith(
-      { alias: 'prod', instanceUrl: 'acme.service-now.com', username: 'admin', password: 's3cret' },
+      {
+        alias: 'prod',
+        instanceUrl: 'https://acme.service-now.com/',
+        username: 'admin',
+        password: 's3cret',
+      },
+      false,
+    );
+  });
+
+  it('skips username and password prompts when the instance URL carries both query params', async () => {
+    await command.run([], {
+      alias: 'prod',
+      instance:
+        'https://dev408698.service-now.com/login.do?user_name=admin&user_password=Ss%2F*C7LvHn4o',
+    });
+
+    expect(prompt.input).not.toHaveBeenCalled();
+    expect(prompt.password).not.toHaveBeenCalled();
+    expect(authService.add).toHaveBeenCalledWith(
+      {
+        alias: 'prod',
+        instanceUrl: 'https://dev408698.service-now.com/',
+        username: 'admin',
+        password: 'Ss/*C7LvHn4o',
+      },
+      false,
+    );
+  });
+
+  it('prompts for username but skips password when only user_password is in the URL', async () => {
+    prompt.input.mockResolvedValueOnce('admin');
+
+    await command.run([], {
+      alias: 'prod',
+      instance: 'https://acme.service-now.com/login.do?user_password=p%40ss',
+    });
+
+    expect(prompt.input).toHaveBeenCalledTimes(1);
+    expect(prompt.input).toHaveBeenCalledWith('Username:');
+    expect(prompt.password).not.toHaveBeenCalled();
+    expect(authService.add).toHaveBeenCalledWith(
+      {
+        alias: 'prod',
+        instanceUrl: 'https://acme.service-now.com/',
+        username: 'admin',
+        password: 'p@ss',
+      },
+      false,
+    );
+  });
+
+  it('lets --username override a user_name embedded in the instance URL', async () => {
+    await command.run([], {
+      alias: 'prod',
+      username: 'override',
+      instance:
+        'https://acme.service-now.com/login.do?user_name=admin&user_password=Ss%2F*C7LvHn4o',
+    });
+
+    expect(prompt.input).not.toHaveBeenCalled();
+    expect(prompt.password).not.toHaveBeenCalled();
+    expect(authService.add).toHaveBeenCalledWith(
+      {
+        alias: 'prod',
+        instanceUrl: 'https://acme.service-now.com/',
+        username: 'override',
+        password: 'Ss/*C7LvHn4o',
+      },
       false,
     );
   });

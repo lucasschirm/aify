@@ -27,6 +27,42 @@ describe('parseInstance', () => {
       url: 'https://acme.service-now.com/',
     });
   });
+
+  it('extracts user_name and user_password from the query string and strips them from url', () => {
+    expect(
+      parseInstance(
+        'https://dev408698.service-now.com/login.do?user_name=admin&sys_action=sysverb_login&user_password=Ss%2F*C7LvHn4o',
+      ),
+    ).toEqual({
+      host: 'dev408698.service-now.com',
+      url: 'https://dev408698.service-now.com/',
+      username: 'admin',
+      password: 'Ss/*C7LvHn4o',
+    });
+  });
+
+  it('extracts only user_name when user_password is absent', () => {
+    expect(parseInstance('https://acme.service-now.com/login.do?user_name=admin')).toEqual({
+      host: 'acme.service-now.com',
+      url: 'https://acme.service-now.com/',
+      username: 'admin',
+    });
+  });
+
+  it('extracts only user_password when user_name is absent', () => {
+    expect(parseInstance('https://acme.service-now.com/login.do?user_password=p%40ss')).toEqual({
+      host: 'acme.service-now.com',
+      url: 'https://acme.service-now.com/',
+      password: 'p@ss',
+    });
+  });
+
+  it('omits username/password when neither query param is present', () => {
+    expect(parseInstance('https://acme.service-now.com/some/path')).toEqual({
+      host: 'acme.service-now.com',
+      url: 'https://acme.service-now.com/',
+    });
+  });
 });
 
 describe('AuthService', () => {
