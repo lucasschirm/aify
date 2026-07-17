@@ -31,7 +31,7 @@ describe('parseInstance', () => {
 
 describe('AuthService', () => {
   let sequelize: Sequelize;
-  let tableApi: { list: ReturnType<typeof vi.fn> };
+  let tableApi: { test: ReturnType<typeof vi.fn> };
   let credentials: {
     setPassword: ReturnType<typeof vi.fn>;
     getPassword: ReturnType<typeof vi.fn>;
@@ -54,7 +54,7 @@ describe('AuthService', () => {
       models: [Instance, Auth],
     });
     await sequelize.sync({ force: true });
-    tableApi = { list: vi.fn().mockResolvedValue([]) };
+    tableApi = { test: vi.fn().mockResolvedValue(undefined) };
     credentials = { setPassword: vi.fn(), getPassword: vi.fn(), deletePassword: vi.fn() };
     const spinner = {
       start: vi.fn(),
@@ -72,24 +72,24 @@ describe('AuthService', () => {
     );
   });
 
-  it('testConnection lists a single sys_metadata row', async () => {
+  it('testConnection issues a single non-paginating probe to sys_metadata', async () => {
     const snAuth: SnAuth = {
       instanceUrl: 'https://acme.service-now.com/',
       username: 'admin',
       password: 's3cret',
     };
     await service.testConnection(snAuth);
-    expect(tableApi.list).toHaveBeenCalledWith(snAuth, 'sys_metadata', { limit: 1 });
+    expect(tableApi.test).toHaveBeenCalledWith(snAuth);
   });
 
   it('saves the auth row, the instance host, and the keychain password on success', async () => {
     const auth = await service.add(input);
 
-    expect(tableApi.list).toHaveBeenCalledWith(
-      { instanceUrl: 'https://acme.service-now.com/', username: 'admin', password: 's3cret' },
-      'sys_metadata',
-      { limit: 1 },
-    );
+    expect(tableApi.test).toHaveBeenCalledWith({
+      instanceUrl: 'https://acme.service-now.com/',
+      username: 'admin',
+      password: 's3cret',
+    });
     expect(auth.alias).toBe('prod');
     expect(auth.username).toBe('admin');
     expect(auth.isCurrent).toBe(true);
@@ -107,7 +107,7 @@ describe('AuthService', () => {
   it('saves nothing when authentication fails (401)', async () => {
     const err = new AuthError('Unauthorized');
     err.status = 401;
-    tableApi.list.mockRejectedValue(err);
+    tableApi.test.mockRejectedValue(err);
 
     await expect(service.add(input)).rejects.toBeInstanceOf(AuthError);
     expect(await Auth.count()).toBe(0);

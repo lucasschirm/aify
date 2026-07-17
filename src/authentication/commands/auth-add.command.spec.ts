@@ -62,6 +62,50 @@ describe('AuthAddCommand', () => {
     await command.run([], { alias: 'prod', instance: 'acme', username: 'admin' });
 
     expect(spy).toHaveBeenCalledWith('Authentication failed (HTTP 401). Nothing was saved.');
+    expect(process.exitCode).toBe(1);
     spy.mockRestore();
+    process.exitCode = undefined;
+  });
+
+  it('reports a connection failure with its status and message', async () => {
+    const err = new ConnectionError('Request failed with status 503.', 503);
+    authService.add.mockRejectedValue(err);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await command.run([], { alias: 'prod', instance: 'acme', username: 'admin' });
+
+    expect(spy).toHaveBeenCalledWith(
+      'Connection failed (HTTP 503): Request failed with status 503.',
+    );
+    expect(process.exitCode).toBe(1);
+    spy.mockRestore();
+    process.exitCode = undefined;
+  });
+
+  it('reports a connection failure without a status for network errors', async () => {
+    const err = new ConnectionError('getaddrinfo ENOTFOUND acme');
+    authService.add.mockRejectedValue(err);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await command.run([], { alias: 'prod', instance: 'acme', username: 'admin' });
+
+    expect(spy).toHaveBeenCalledWith('Connection failed: getaddrinfo ENOTFOUND acme');
+    expect(process.exitCode).toBe(1);
+    spy.mockRestore();
+    process.exitCode = undefined;
+  });
+
+  it('reports a generic error message and exits non-zero', async () => {
+    authService.add.mockRejectedValue(
+      new Error('Alias "prod" already exists. Use --force to overwrite.'),
+    );
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await command.run([], { alias: 'prod', instance: 'acme', username: 'admin' });
+
+    expect(spy).toHaveBeenCalledWith('Alias "prod" already exists. Use --force to overwrite.');
+    expect(process.exitCode).toBe(1);
+    spy.mockRestore();
+    process.exitCode = undefined;
   });
 });

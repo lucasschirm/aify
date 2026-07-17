@@ -48,13 +48,15 @@ export class AuthService {
   ) {}
 
   /**
-   * Verify credentials by requesting a single sys_metadata row. Propagates AuthError (401,
-   * never retried) and ConnectionError from the Table API client.
+   * Verify credentials with a single non-paginating request to `sys_metadata`. Propagates
+   * AuthError (401, never retried) and ConnectionError from the Table API client. Uses
+   * `TableApiClient.test` (one row, no `Link rel="next"` following) — `list` would walk the
+   * whole table one row at a time under `limit: 1` and appear to hang.
    */
   async testConnection(snAuth: SnAuth): Promise<void> {
     this.spinner.start('Testing connection…');
     try {
-      await this.tableApi.list(snAuth, 'sys_metadata', { limit: 1 });
+      await this.tableApi.test(snAuth);
       this.spinner.succeed('Connection verified.');
     } catch (err) {
       this.spinner.fail('Connection failed.');

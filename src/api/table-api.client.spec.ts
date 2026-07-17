@@ -66,6 +66,49 @@ describe('TableApiClient.list', () => {
   });
 });
 
+describe('TableApiClient.test', () => {
+  it('sends a single request with sysparm_limit=1 and does NOT follow a Link rel="next"', async () => {
+    // A rel="next" link is present but must be ignored — test() is a one-shot credential probe.
+    const nextUrl = `${HOST}/api/now/v2/table/sys_metadata?sysparm_offset=1&sysparm_limit=1`;
+    const scope = nock(HOST, { reqheaders: { authorization: basic } })
+      .get('/api/now/v2/table/sys_metadata')
+      .query({ sysparm_limit: '1' })
+      .reply(200, { result: [{ sys_id: '1' }] }, { Link: `<${nextUrl}>;rel="next"` });
+
+    const client = new TableApiClient({ maxAttempts: 3, delayMs: 1 });
+    await client.test(auth);
+
+    expect(scope.isDone()).toBe(true);
+    // No second request was made despite the next link.
+    expect(nock.pendingMocks()).toEqual([]);
+  });
+
+  it('throws AuthError on 401 and never retries', async () => {
+    const scope = nock(HOST)
+      .get('/api/now/v2/table/sys_metadata')
+      .query({ sysparm_limit: '1' })
+      .reply(401, { error: { message: 'User Not Authenticated' } });
+
+    const client = new TableApiClient({ maxAttempts: 3, delayMs: 100 });
+
+    await expect(client.test(auth)).rejects.toBeInstanceOf(AuthError);
+    expect(scope.isDone()).toBe(true);
+    expect(nock.pendingMocks()).toEqual([]);
+  });
+
+  it('throws ConnectionError when a transient 500 exhausts retries', async () => {
+    nock(HOST)
+      .get('/api/now/v2/table/sys_metadata')
+      .query({ sysparm_limit: '1' })
+      .reply(500, { error: { message: 'boom' } });
+
+    const client = new TableApiClient({ maxAttempts: 1, delayMs: 1 });
+
+    await expect(client.test(auth)).rejects.toBeInstanceOf(ConnectionError);
+    expect(nock.isDone()).toBe(true);
+  });
+});
+
 describe('TableApiClient.getOne', () => {
   it('returns the record when found', async () => {
     nock(HOST, { reqheaders: { authorization: basic } })

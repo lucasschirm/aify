@@ -59,6 +59,18 @@ export class TableApiClient {
     return records;
   }
 
+  /**
+   * Verify credentials with a SINGLE lightweight request (`sysparm_limit=1`) and NO
+   * pagination following. Use this for `auth add`/`auth update` connection tests — never
+   * `list`, which follows `Link rel="next"` until exhausted and would walk every row in the
+   * table one at a time when `limit: 1` is set. Propagates `AuthError` (401, never retried)
+   * and `ConnectionError` (network/transient/non-auth HTTP failures) from `send`.
+   */
+  async test(auth: SnAuth, table = 'sys_metadata'): Promise<void> {
+    const url = `${this.base(auth)}/api/now/v2/table/${table}?sysparm_limit=1`;
+    await this.send(auth, url, { method: 'GET' });
+  }
+
   async getOne(
     auth: SnAuth,
     table: string,

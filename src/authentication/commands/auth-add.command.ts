@@ -5,7 +5,7 @@
  * On AuthError (401) it reports the failure; AuthService guarantees nothing was persisted.
  */
 import { CommandRunner, Option, SubCommand } from 'nest-commander';
-import { AuthError } from '../../api/table-api.client';
+import { AuthError, ConnectionError } from '../../api/table-api.client';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { AuthService } from '../auth.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
@@ -40,11 +40,18 @@ export class AuthAddCommand extends CommandRunner {
       );
       console.log(`Connection "${alias}" saved and set as current.`);
     } catch (error) {
+      // AuthService.add tests the connection BEFORE persisting anything, so on any failure
+      // here nothing was saved. Print a clear, actionable message per error type and exit
+      // non-zero — never rethrow (that would surface a raw nest-commander stack trace).
       if (error instanceof AuthError) {
         console.error(`Authentication failed (HTTP ${error.status}). Nothing was saved.`);
-        return;
+      } else if (error instanceof ConnectionError) {
+        const status = error.status ? ` (HTTP ${error.status})` : '';
+        console.error(`Connection failed${status}: ${error.message}`);
+      } else {
+        console.error(error instanceof Error ? error.message : String(error));
       }
-      throw error;
+      process.exitCode = 1;
     }
   }
 
