@@ -23,13 +23,13 @@ describe('DatabaseModule', () => {
     await moduleRef.close();
   });
 
-  it('runs sync({ alter: true }) on init, creating registered tables', async () => {
+  it('runs sync() on init, creating registered tables', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule.forRoot(':memory:')],
     }).compile();
     const sequelize = moduleRef.get(Sequelize);
     sequelize.addModels([Probe]);
-    await moduleRef.init(); // triggers onModuleInit -> sequelize.sync({ alter: true })
+    await moduleRef.init(); // triggers onModuleInit -> sequelize.sync() (create-missing only)
     const tables = await sequelize.getQueryInterface().showAllTables();
     expect(tables).toContain('probes');
     await moduleRef.close();

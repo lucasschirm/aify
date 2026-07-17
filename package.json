@@ -40,6 +40,7 @@
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
     "chokidar": "^5.0.0",
+    "cli-table3": "^0.6.5",
     "keytar": "^7.9.0",
     "nest-commander": "^3.20.1",
     "ora": "5.4.1",

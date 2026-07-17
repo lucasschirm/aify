@@ -1,8 +1,12 @@
 /**
  * @file database.module.ts
  * NestJS module that owns the shared Sequelize instance. On startup it synchronizes the
- * schema with sync({ alter: true }) — additive evolution only; it NEVER drops columns
- * (OS-29). SQLite's alter can rebuild tables; umzug migrations are planned for later.
+ * schema with sync() — create-missing-tables only; it NEVER alters or drops existing
+ * columns/tables (OS-29). SQLite's alter rebuilds tables and is fragile against seeded
+ * DBs that have drifted from the models (orphaned `_backup` tables, UNIQUE/FK constraint
+ * failures), so runtime schema evolution is deferred to umzug migrations (planned, per
+ * ARCHITECTURE.md). The canonical schema for fresh installs is the packaged
+ * templates/template_db.sqlite3, built from these models and CI-checked for drift.
  */
 import { type DynamicModule, Module, type OnModuleInit } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
@@ -34,8 +38,8 @@ export class DatabaseModule implements OnModuleInit {
     };
   }
 
-  /** Synchronize the schema additively on startup (never drops columns, OS-29). */
+  /** Synchronize the schema on startup — create-missing-tables only (never alters/drops, OS-29). */
   async onModuleInit(): Promise<void> {
-    await this.sequelize.sync({ alter: true });
+    await this.sequelize.sync();
   }
 }

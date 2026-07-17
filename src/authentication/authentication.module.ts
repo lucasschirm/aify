@@ -11,6 +11,7 @@ import { UiModule } from '../ui/ui.module';
 import { AuthService } from './auth.service';
 import { AuthCommand } from './commands/auth.command';
 import { AuthAddCommand } from './commands/auth-add.command';
+import { AuthListCommand } from './commands/auth-list.command';
 import { AuthRemoveCommand } from './commands/auth-remove.command';
 import { AuthUpdateCommand } from './commands/auth-update.command';
 import { CredentialStore } from './credential-store.service';
@@ -25,6 +26,7 @@ import { PromptService } from './prompt.service';
     PromptService,
     AuthCommand,
     AuthAddCommand,
+    AuthListCommand,
     AuthRemoveCommand,
     AuthUpdateCommand,
   ],

@@ -19,6 +19,8 @@ table holds metadata only.
 | `commands/auth.command.ts` | Parent `aify auth` group (subcommands registered here). |
 | `commands/auth-add.command.ts` | `aify auth add` — masked password prompt, no `--password` flag. |
 | `commands/auth-add.command.spec.ts` | Tests AuthAddCommand with mocked AuthService and PromptService. |
+| `commands/auth-list.command.ts` | `aify auth list` — prints saved connections as a formatted cli-table3 table with columns `is_current, alias, instance, username, last_used`. Exports the pure `renderAuthList(rows)` renderer + `AuthListRow` for unit testing. |
+| `commands/auth-list.command.spec.ts` | Tests `renderAuthList` (exact cli-table3 output, empty-state row spanning all columns) and `AuthListCommand` (maps `AuthService.list` rows to presentation rows and prints the table) with a mocked AuthService via `@nestjs/testing`. |
 
 ## Testing notes
 
