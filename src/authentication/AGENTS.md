@@ -11,7 +11,7 @@ table holds metadata only.
 |------|---------|
 | `credential-store.service.ts` | `CredentialStore` — keytar wrapper (service name `aify`, account = alias): `setPassword` / `getPassword` / `deletePassword`. |
 | `credential-store.service.spec.ts` | Unit tests; `keytar` is mocked with `vi.mock('keytar')` — never touches a real keychain. |
-| `auth.service.ts` | `AuthService` (add/testConnection/current) + `AuthInput` + `parseInstance`. Tests connection before persisting; passwords go to keytar. |
+| `auth.service.ts` | `AuthService` (add/testConnection/current/getSnAuth) + `AuthInput` + `parseInstance`. Tests connection before persisting; passwords go to keytar. `getSnAuth(alias?)` resolves an SnAuth for `auth verify` (current alias or named), throwing actionable errors instead of returning null. |
 | `auth.service.spec.ts` | Tests AuthService with in-memory SQLite, mocked TableApiClient and CredentialStore. |
 | `authentication.module.ts` | NestJS module wiring the services and `auth` commands. |
 | `authentication.module.spec.ts` | Module compilation smoke test. |
@@ -21,6 +21,8 @@ table holds metadata only.
 | `commands/auth-add.command.spec.ts` | Tests AuthAddCommand with mocked AuthService and PromptService. |
 | `commands/auth-list.command.ts` | `aify auth list` — prints saved connections as a formatted cli-table3 table with columns `is_current, alias, instance, username, last_used`. Exports the pure `renderAuthList(rows)` renderer + `AuthListRow` for unit testing. |
 | `commands/auth-list.command.spec.ts` | Tests `renderAuthList` (exact cli-table3 output, empty-state row spanning all columns) and `AuthListCommand` (maps `AuthService.list` rows to presentation rows and prints the table) with a mocked AuthService via `@nestjs/testing`. |
+| `commands/auth-verify.command.ts` | `aify auth verify [--alias <alias>]` — resolves SnAuth via `AuthService.getSnAuth` and probes the connection via `AuthService.testConnection`. The spinner prints success/failure; the command only adds error handling and a non-zero exit. |
+| `commands/auth-verify.command.spec.ts` | Tests AuthVerifyCommand with a mocked AuthService (current vs named alias, AuthError, ConnectionError with/without status, lookup error). |
 
 ## Testing notes
 

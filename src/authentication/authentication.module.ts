@@ -14,6 +14,7 @@ import { AuthAddCommand } from './commands/auth-add.command';
 import { AuthListCommand } from './commands/auth-list.command';
 import { AuthRemoveCommand } from './commands/auth-remove.command';
 import { AuthUpdateCommand } from './commands/auth-update.command';
+import { AuthVerifyCommand } from './commands/auth-verify.command';
 import { CredentialStore } from './credential-store.service';
 import { PromptService } from './prompt.service';
 
@@ -29,6 +30,7 @@ import { PromptService } from './prompt.service';
     AuthListCommand,
     AuthRemoveCommand,
     AuthUpdateCommand,
+    AuthVerifyCommand,
   ],
   exports: [TableApiClient, AuthService, PromptService],
 })

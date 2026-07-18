@@ -177,4 +177,48 @@ describe('AuthService', () => {
   it('current() returns null when there is no current connection', async () => {
     expect(await service.current()).toBeNull();
   });
+
+  describe('getSnAuth', () => {
+    it('returns SnAuth for the current connection when no alias is passed', async () => {
+      await service.add(input);
+      credentials.getPassword.mockResolvedValue('s3cret');
+
+      const result = await service.getSnAuth();
+      expect(result?.auth.alias).toBe('prod');
+      expect(result?.snAuth).toEqual({
+        instanceUrl: 'https://acme.service-now.com/',
+        username: 'admin',
+        password: 's3cret',
+      });
+    });
+
+    it('returns SnAuth for the named alias when one is passed', async () => {
+      await service.add(input);
+      await service.add({ ...input, alias: 'dev' });
+      credentials.getPassword.mockResolvedValue('s3cret');
+
+      const result = await service.getSnAuth('dev');
+      expect(result?.auth.alias).toBe('dev');
+      expect(result?.snAuth).toEqual({
+        instanceUrl: 'https://acme.service-now.com/',
+        username: 'admin',
+        password: 's3cret',
+      });
+    });
+
+    it('throws "Alias not found" for an unknown alias', async () => {
+      await expect(service.getSnAuth('ghost')).rejects.toThrow('Alias "ghost" not found.');
+    });
+
+    it('throws an actionable message when there is no current connection', async () => {
+      await expect(service.getSnAuth()).rejects.toThrow(/No current connection/);
+    });
+
+    it('throws when the keychain password is missing', async () => {
+      await service.add(input);
+      credentials.getPassword.mockResolvedValue(null);
+
+      await expect(service.getSnAuth()).rejects.toThrow(/No password stored in the keychain/);
+    });
+  });
 });

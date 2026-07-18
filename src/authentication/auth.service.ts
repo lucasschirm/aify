@@ -178,6 +178,37 @@ export class AuthService {
     await this.credentials.deletePassword(alias);
   }
 
+  /**
+   * Resolve an SnAuth (instance URL + username + keychain password) for `aify auth verify`.
+   * When `alias` is omitted, uses the globally-current connection; otherwise looks the named
+   * alias up. Throws an actionable error when there is no current connection, the alias is
+   * unknown, the keychain password is missing, or the underlying Instance row is gone —
+   * `verify` needs a clear message rather than a silent null. `current()` is left unchanged
+   * for existing callers that prefer a null return.
+   */
+  async getSnAuth(alias?: string): Promise<{ auth: Auth; snAuth: SnAuth }> {
+    const auth = alias
+      ? await Auth.findOne({ where: { alias } })
+      : await Auth.findOne({ where: { isCurrent: true } });
+    if (!auth) {
+      throw alias
+        ? new Error(`Alias "${alias}" not found.`)
+        : new Error('No current connection. Add one with "aify auth add" or pass --alias.');
+    }
+    const password = await this.credentials.getPassword(auth.alias);
+    if (password === null) {
+      throw new Error(`No password stored in the keychain for "${auth.alias}".`);
+    }
+    const instance = await Instance.findByPk(auth.instanceId);
+    if (!instance) {
+      throw new Error(`Instance row for alias "${auth.alias}" is missing from the database.`);
+    }
+    return {
+      auth,
+      snAuth: { instanceUrl: instance.url, username: auth.username, password },
+    };
+  }
+
   /** Promote an alias to the single global current connection (the model hook clears others). */
   async setCurrent(alias: string): Promise<Auth> {
     const auth = await Auth.findOne({ where: { alias } });

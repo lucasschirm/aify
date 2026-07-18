@@ -146,3 +146,5 @@ vite.config.ts.timestamp-*
 .pi-rules
 reference_docs/
 .devin
+.aify.config.json
+x_2095413_test/sys_package.json

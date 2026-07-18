@@ -8,11 +8,18 @@ import { AuthAddCommand } from './auth-add.command';
 import { AuthListCommand } from './auth-list.command';
 import { AuthRemoveCommand } from './auth-remove.command';
 import { AuthUpdateCommand } from './auth-update.command';
+import { AuthVerifyCommand } from './auth-verify.command';
 
 @Command({
   name: 'auth',
   description: 'Manage ServiceNow connections.',
-  subCommands: [AuthAddCommand, AuthRemoveCommand, AuthUpdateCommand, AuthListCommand],
+  subCommands: [
+    AuthAddCommand,
+    AuthRemoveCommand,
+    AuthUpdateCommand,
+    AuthListCommand,
+    AuthVerifyCommand,
+  ],
 })
 export class AuthCommand extends CommandRunner {
   async run(): Promise<void> {
