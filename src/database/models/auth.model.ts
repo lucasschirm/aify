@@ -3,13 +3,17 @@
  * Sequelize model for a stored ServiceNow credential's METADATA only. The password is NEVER
  * stored here — it lives in the OS keychain via keytar (OS-17). `alias` is globally unique
  * (OS-16). `isCurrent` is a single global flag telling `sync` which instance to target; a
- * @BeforeSave hook enforces that at most one row is current.
+ * combination of @AfterCreate / @AfterUpdate / @AfterUpsert hooks enforces that at most one
+ * row is current — whenever a row is written with isCurrent=true, every OTHER row is flipped
+ * back to false (via a bulk update with hooks:false so the hook does not re-fire).
  */
 import { Op } from 'sequelize';
 import {
   AllowNull,
   AutoIncrement,
-  BeforeSave,
+  AfterCreate,
+  AfterUpdate,
+  AfterUpsert,
   BelongsTo,
   Column,
   DataType,
@@ -63,11 +67,16 @@ export class Auth extends Model {
   declare lastUsedAt: Date | null;
 
   /**
-   * Enforce a single global current credential: when a row is saved with isCurrent=true,
-   * set isCurrent=false on every OTHER row first. Uses a bulk update (which does not fire
-   * @BeforeSave), so there is no recursion.
+   * Enforce a single global current credential: when a row is written with isCurrent=true,
+   * set isCurrent=false on every OTHER row. Uses a bulk update with hooks:false so the
+   * @AfterUpdate hook does not re-fire on the rows being cleared — no recursion. Wired to
+   * @AfterCreate (Auth.create), @AfterUpdate (instance.save on an existing row), and
+   * @AfterUpsert (Auth.upsert / findOrCreate-with-upsert) so every write path that promotes
+   * a row to current also demotes the rest.
    */
-  @BeforeSave
+  @AfterCreate
+  @AfterUpdate
+  @AfterUpsert
   static async enforceSingleCurrent(entity: Auth): Promise<void> {
     if (!entity.isCurrent) return;
     const where = entity.id ? { id: { [Op.ne]: entity.id } } : {};

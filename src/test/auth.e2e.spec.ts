@@ -95,6 +95,7 @@ describe('auth command (E2E)', () => {
     expect(output).toContain('list');
     expect(output).toContain('remove');
     expect(output).toContain('update');
+    expect(output).toContain('use');
     expect(output).toContain('verify');
   });
 });

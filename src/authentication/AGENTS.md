@@ -21,6 +21,8 @@ table holds metadata only.
 | `commands/auth-add.command.spec.ts` | Tests AuthAddCommand with mocked AuthService and PromptService. |
 | `commands/auth-list.command.ts` | `aify auth list` — prints saved connections as a formatted cli-table3 table with columns `is_current, alias, instance, username, last_used`. Exports the pure `renderAuthList(rows)` renderer + `AuthListRow` for unit testing. |
 | `commands/auth-list.command.spec.ts` | Tests `renderAuthList` (exact cli-table3 output, empty-state row spanning all columns) and `AuthListCommand` (maps `AuthService.list` rows to presentation rows and prints the table) with a mocked AuthService via `@nestjs/testing`. |
+| `commands/auth-use.command.ts` | `aify auth use <alias>` — promotes an existing alias to the single global current connection via `AuthService.setCurrent`. The Auth model's `@AfterUpdate` hook flips every other row to false. Prints a usage error when no alias is given and surfaces `setCurrent` failures without rethrowing. |
+| `commands/auth-use.command.spec.ts` | Tests `AuthUseCommand` with a mocked AuthService: success path, missing-alias usage error, and rejection surfacing (Error and non-Error). |
 | `commands/auth-verify.command.ts` | `aify auth verify [--alias <alias>]` — resolves SnAuth via `AuthService.getSnAuth` and probes the connection via `AuthService.testConnection`. The spinner prints success/failure; the command only adds error handling and a non-zero exit. |
 | `commands/auth-verify.command.spec.ts` | Tests AuthVerifyCommand with a mocked AuthService (current vs named alias, AuthError, ConnectionError with/without status, lookup error). |
 

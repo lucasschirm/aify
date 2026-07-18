@@ -8,6 +8,7 @@ import { AuthAddCommand } from './auth-add.command';
 import { AuthListCommand } from './auth-list.command';
 import { AuthRemoveCommand } from './auth-remove.command';
 import { AuthUpdateCommand } from './auth-update.command';
+import { AuthUseCommand } from './auth-use.command';
 import { AuthVerifyCommand } from './auth-verify.command';
 
 @Command({
@@ -17,6 +18,7 @@ import { AuthVerifyCommand } from './auth-verify.command';
     AuthAddCommand,
     AuthRemoveCommand,
     AuthUpdateCommand,
+    AuthUseCommand,
     AuthListCommand,
     AuthVerifyCommand,
   ],
