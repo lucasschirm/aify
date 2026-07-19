@@ -45,7 +45,10 @@ describe('SyncService hot mode', () => {
       confirm: vi.fn().mockResolvedValue(true),
       awaitKeypress: vi.fn().mockResolvedValue(true),
     };
-    const conflictCheckStage = { classify: vi.fn().mockResolvedValue([]) };
+    const conflictCheckStage = {
+      classify: vi.fn().mockResolvedValue([]),
+      detectLocalChanges: vi.fn().mockResolvedValue([]),
+    };
     const writeStage = { apply: vi.fn().mockResolvedValue({ conflicted: [] }) };
     const pushStage = { push: vi.fn().mockResolvedValue({ pushed: [], skipped: [] }) };
     const spinner = { start: vi.fn(), succeed: vi.fn(), fail: vi.fn() };

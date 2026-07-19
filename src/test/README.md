@@ -272,5 +272,6 @@ it('persists the auth row', async () => {
 | File | Purpose |
 |------|---------|
 | `auth.e2e.spec.ts` | E2E for the `aify auth` group — runs `auth` with no subcommand and asserts the help output contains the description and all registered subcommands. |
+| `sync.e2e.spec.ts` | E2E for `aify sync` — runs the REAL `TableApiClient` against a `nock`-mocked ServiceNow instance (only `CredentialStore`, `PromptService`, `SpinnerService` are overridden). Covers first-pull create, incremental take-remote, local-edit push, merge conflicts, `Link` pagination, `sys_metadata_delete` deletion, `--force-pull`, `--force-push`, and the empty-scopes error path. |
 
 Add new files and their purpose to this table as the suite grows.

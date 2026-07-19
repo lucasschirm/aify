@@ -118,6 +118,21 @@ export class SyncService {
         try {
           const pullResult = await this.pullStage.run(input);
           const changes = await this.conflictCheckStage.classify(pullResult.changed, trackConfig);
+
+          // Detect local-only edits (file hash changed but the instance didn't report a change).
+          // These are pushed to the instance as `keep-local` — without this, `aify sync` would
+          // silently ignore user edits on records the instance hasn't touched.
+          if (!options.forcePull) {
+            const remoteChangedIds = new Set(pullResult.changed.map((r) => r.sysId));
+            const localChanges = await this.conflictCheckStage.detectLocalChanges(
+              root,
+              input.scope.scope,
+              trackConfig,
+              remoteChangedIds,
+            );
+            changes.push(...localChanges);
+          }
+
           const writeResult = await this.writeStage.apply({
             root,
             changes,

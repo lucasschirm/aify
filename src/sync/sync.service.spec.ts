@@ -50,7 +50,10 @@ function makeDeps(
     run: vi.fn().mockResolvedValue({ changed: [], created: [], deleted: [] }),
     detectChanges: vi.fn(),
   };
-  const conflictCheckStage = { classify: vi.fn().mockResolvedValue([]) };
+  const conflictCheckStage = {
+    classify: vi.fn().mockResolvedValue([]),
+    detectLocalChanges: vi.fn().mockResolvedValue([]),
+  };
   const writeStage = { apply: vi.fn().mockResolvedValue({ conflicted: [] }) };
   const pushStage = { push: vi.fn().mockResolvedValue({ pushed: [], skipped: [] }) };
   const watcher = {

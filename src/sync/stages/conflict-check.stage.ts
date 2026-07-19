@@ -6,16 +6,20 @@
  * `keep-local` / `merge`.
  */
 
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Injectable } from '@nestjs/common';
 import { hashContent } from '../../common/hashing/content-hash';
 import type { TrackConfig } from '../../config/tracked-tables/tracked-tables.types';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { RecordMetadataService } from '../../record-metadata/record-metadata.service';
 import type { ColumnChange, ConflictClass } from '../sync.types';
 import type { PulledRecord } from './pull.stage';
 
 @Injectable()
 export class ConflictCheckStage {
+  constructor(private readonly records: RecordMetadataService) {}
+
   /** Classify every tracked column of every carried-over record. */
   async classify(records: PulledRecord[], trackConfig: TrackConfig): Promise<ColumnChange[]> {
     const changes: ColumnChange[] = [];
@@ -45,6 +49,57 @@ export class ConflictCheckStage {
           remoteModCount: record.remote.sys_mod_count
             ? Number(record.remote.sys_mod_count)
             : undefined,
+        });
+      }
+    }
+    return changes;
+  }
+
+  /**
+   * Scan every local record in a scope for columns whose file hash differs from the stored
+   * `$hash` (user edits the instance didn't report as changed). Returns `keep-local` changes
+   * for each one, skipping any sys_id already in `remoteChangedIds` (those were handled by
+   * `classify` above). This is what makes `aify sync` push local-only edits to the instance.
+   */
+  async detectLocalChanges(
+    root: string,
+    scope: string,
+    trackConfig: TrackConfig,
+    remoteChangedIds: Set<string>,
+  ): Promise<ColumnChange[]> {
+    const map = await this.records.loadScopeMap(root, scope);
+    const changes: ColumnChange[] = [];
+    for (const { folder, meta } of map.values()) {
+      if (remoteChangedIds.has(meta.$sys_id)) continue; // already classified via pull
+      const tableColumns = trackConfig.tables.find((t) => t.name === meta.$table)?.columns ?? [];
+      if (tableColumns.length === 0) continue;
+      let files: string[] = [];
+      try {
+        files = await readdir(folder);
+      } catch {
+        continue;
+      }
+      for (const col of tableColumns) {
+        const ext = trackConfig.column_types[col.type]?.extension ?? 'txt';
+        const fileName = `${col.name}.${ext}`;
+        if (!files.includes(fileName)) continue;
+        const filePath = join(folder, fileName);
+        const local = await readFile(filePath, 'utf8').catch(() => '');
+        const storedHash = meta.$hash[col.name];
+        if (storedHash === undefined) continue;
+        if (hashContent(local) === storedHash) continue; // unchanged
+        changes.push({
+          sysId: meta.$sys_id,
+          table: meta.$table,
+          column: col.name,
+          localChanged: true,
+          remoteChanged: false,
+          klass: 'keep-local',
+          base: (meta[col.name] as string | undefined) ?? '',
+          local,
+          remote: (meta[col.name] as string | undefined) ?? '',
+          folder,
+          filePath,
         });
       }
     }

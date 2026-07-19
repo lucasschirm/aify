@@ -6,16 +6,16 @@ import { describe, expect, it } from 'vitest';
 import { dateGenerate, inClause, splitByUrlLimit } from './encoded-query.builder';
 
 describe('dateGenerate', () => {
-  it('wraps a ServiceNow timestamp in a javascript:gs.dateGenerate() call', () => {
-    expect(dateGenerate('2026-01-19 04:52:04')).toBe(
-      "javascript:gs.dateGenerate('2026-01-19','04:52:04')",
-    );
+  it('returns the UTC timestamp as a plain literal (NOT wrapped in gs.dateGenerate)', () => {
+    // gs.dateGenerate() interprets its arguments in the session's time zone and converts
+    // to UTC — but sys_updated_on from the Table API is already UTC, so wrapping it would
+    // silently shift the "changed since" threshold by the session's UTC offset.
+    expect(dateGenerate('2026-01-19 04:52:04')).toBe('2026-01-19 04:52:04');
+    expect(dateGenerate('2026-01-19 04:52:04')).not.toContain('gs.dateGenerate');
   });
 
   it('tolerates surrounding whitespace in the timestamp', () => {
-    expect(dateGenerate('  2026-01-19 04:52:04  ')).toBe(
-      "javascript:gs.dateGenerate('2026-01-19','04:52:04')",
-    );
+    expect(dateGenerate('  2026-01-19 04:52:04  ')).toBe('2026-01-19 04:52:04');
   });
 });
 
