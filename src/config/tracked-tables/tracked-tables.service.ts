@@ -1,7 +1,7 @@
 /**
  * @file tracked-tables.service.ts
  * TrackedTablesService.getProjectTrackTables() deep-merges the tracked-table config across three
- * layers — INTERIM_DEFAULT_TABLES → ~/.aify/track_tables.json (global) → .aify.config.json
+ * layers — DEFAULT_TABLES → ~/.aify/track_tables.json (global) → .aify.config.json
  * (project) — so project settings win and nothing is lost (OS-15). Tables merge by name, their
  * columns by name, and column_types by spread (last writer wins).
  */
@@ -12,7 +12,7 @@ import { Injectable } from '@nestjs/common';
 import { GlobalConfigService } from '../global/global-config.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { ProjectConfigService } from '../project/project-config.service';
-import { INTERIM_DEFAULT_TABLES } from './default-tables';
+import { DEFAULT_TABLES } from './default-tables';
 import type { ColumnType, TrackConfig, TrackedColumn, TrackedTable } from './tracked-tables.types';
 
 @Injectable()
@@ -25,7 +25,7 @@ export class TrackedTablesService {
   async getProjectTrackTables(projectRoot: string): Promise<TrackConfig> {
     let merged = mergeTrackConfig(
       { tables: [], column_types: {} as Record<string, ColumnType> },
-      INTERIM_DEFAULT_TABLES,
+      DEFAULT_TABLES,
     );
     merged = mergeTrackConfig(merged, await this.readGlobal());
     merged = mergeTrackConfig(merged, await this.readProject(projectRoot));

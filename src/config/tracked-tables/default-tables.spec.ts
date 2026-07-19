@@ -1,9 +1,10 @@
 /**
  * @file default-tables.spec.ts
- * Tests for parseTrackedTableList parser and INTERIM_DEFAULT_TABLES.
+ * Tests for parseTrackedTableList parser and DEFAULT_TABLES (sourced from ../base.json, which
+ * is generated from reference_docs/plans/sys_dictionary.csv by scripts/build-base-config.ts).
  */
 import { describe, expect, it } from 'vitest';
-import { INTERIM_DEFAULT_TABLES, parseTrackedTableList } from './default-tables';
+import { DEFAULT_TABLES, parseTrackedTableList } from './default-tables';
 
 describe('parseTrackedTableList', () => {
   it('parses ||/| rows and strips the trailing sys_id from the table name', () => {
@@ -33,10 +34,28 @@ describe('parseTrackedTableList', () => {
     ]);
   });
 
-  it('ships the interim default set with glidescript/javascript column types', () => {
-    const names = INTERIM_DEFAULT_TABLES.tables.map((t) => t.name);
+  it('ships the default set sourced from sys_dictionary.csv (one column_type per internal_type)', () => {
+    const names = DEFAULT_TABLES.tables.map((t) => t.name);
     expect(names).toContain('sys_script');
     expect(names).toContain('sys_ws_operation');
-    expect(INTERIM_DEFAULT_TABLES.column_types.glidescript.extension).toBe('glide.js');
+    // 42 tables from the CSV baseline.
+    expect(DEFAULT_TABLES.tables).toHaveLength(42);
+    // 8 column_types — one per distinct CSV internal_type.
+    expect(Object.keys(DEFAULT_TABLES.column_types).sort()).toEqual(
+      [
+        'css',
+        'html',
+        'html_script',
+        'html_template',
+        'json',
+        'script',
+        'script_plain',
+        'server_script',
+      ].sort(),
+    );
+    expect(DEFAULT_TABLES.column_types.script.extension).toBe('js');
+    expect(DEFAULT_TABLES.column_types.script_plain.extension).toBe('client.js');
+    expect(DEFAULT_TABLES.column_types.server_script.extension).toBe('server.js');
+    expect(DEFAULT_TABLES.column_types.html_template.extension).toBe('template.html');
   });
 });

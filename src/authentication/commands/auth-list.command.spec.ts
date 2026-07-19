@@ -78,7 +78,7 @@ describe('AuthListCommand', () => {
     ]);
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await command.run([], {});
+    await command.run();
 
     expect(spy).toHaveBeenCalledWith(
       renderAuthList([

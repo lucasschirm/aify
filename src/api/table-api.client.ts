@@ -5,7 +5,8 @@
  * later cycles) RetryPolicy-driven retry with a never-retried 401 (OS-23).
  */
 import { Optional } from '@nestjs/common';
-import type { GlobalConfigService } from '../config/global/global-config.service';
+// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
+import { GlobalConfigService } from '../config/global/global-config.service';
 import type { ListOptions, RetryPolicy, SnAuth, SnRecord } from './table-api.types';
 
 export type { SnAuth, SnRecord } from './table-api.types';

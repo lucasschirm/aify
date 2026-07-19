@@ -1,0 +1,536 @@
+{
+  "tables": [
+    {
+      "name": "scheduled_data_export",
+      "columns": [
+        {
+          "name": "pre_script",
+          "type": "script"
+        },
+        {
+          "name": "post_script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "scheduled_data_import",
+      "columns": [
+        {
+          "name": "partition_script",
+          "type": "script"
+        },
+        {
+          "name": "post_script",
+          "type": "script"
+        },
+        {
+          "name": "pre_script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sp_agent_chat_config",
+      "columns": [
+        {
+          "name": "server_script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sp_angular_provider",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sp_css",
+      "columns": [
+        {
+          "name": "css",
+          "type": "css"
+        }
+      ]
+    },
+    {
+      "name": "sp_instance",
+      "columns": [
+        {
+          "name": "placeholder_dimensions_script",
+          "type": "script"
+        },
+        {
+          "name": "widget_parameters",
+          "type": "server_script"
+        },
+        {
+          "name": "css",
+          "type": "css"
+        },
+        {
+          "name": "placeholder_dimensions",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sp_ng_template",
+      "columns": [
+        {
+          "name": "template",
+          "type": "html_template"
+        }
+      ]
+    },
+    {
+      "name": "sp_page",
+      "columns": [
+        {
+          "name": "css",
+          "type": "css"
+        }
+      ]
+    },
+    {
+      "name": "sp_portal",
+      "columns": [
+        {
+          "name": "quick_start_config",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sp_rectangle_menu_item",
+      "columns": [
+        {
+          "name": "record_script",
+          "type": "server_script"
+        }
+      ]
+    },
+    {
+      "name": "sp_search_source",
+      "columns": [
+        {
+          "name": "data_fetch_script",
+          "type": "script"
+        },
+        {
+          "name": "typeahead_template",
+          "type": "html_template"
+        },
+        {
+          "name": "search_page_template",
+          "type": "html_template"
+        },
+        {
+          "name": "facet_generation_script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sp_widget",
+      "columns": [
+        {
+          "name": "client_script",
+          "type": "script"
+        },
+        {
+          "name": "css",
+          "type": "css"
+        },
+        {
+          "name": "option_schema",
+          "type": "json"
+        },
+        {
+          "name": "script",
+          "type": "script"
+        },
+        {
+          "name": "demo_data",
+          "type": "json"
+        },
+        {
+          "name": "link",
+          "type": "script"
+        },
+        {
+          "name": "template",
+          "type": "html_template"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_code_coverage",
+      "columns": [
+        {
+          "name": "total_executable_info",
+          "type": "json"
+        },
+        {
+          "name": "coverage",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_code_coverage_api",
+      "columns": [
+        {
+          "name": "aggregated_coverage",
+          "type": "json"
+        },
+        {
+          "name": "total_executable",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_code_coverage_request",
+      "columns": [
+        {
+          "name": "metadata_info",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_snapshot",
+      "columns": [
+        {
+          "name": "client_json",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_step",
+      "columns": [
+        {
+          "name": "mugshots_cache_json",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_step_config",
+      "columns": [
+        {
+          "name": "step_execution_generator",
+          "type": "script_plain"
+        },
+        {
+          "name": "description_generator",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_suite_aggregate_coverage",
+      "columns": [
+        {
+          "name": "aggregated_coverage",
+          "type": "json"
+        },
+        {
+          "name": "total_executable",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_test_aggregate_coverage",
+      "columns": [
+        {
+          "name": "aggregated_coverage",
+          "type": "json"
+        },
+        {
+          "name": "total_executable",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_atf_ui_component",
+      "columns": [
+        {
+          "name": "locator",
+          "type": "json"
+        }
+      ]
+    },
+    {
+      "name": "sys_processor",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_script",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_adapter_rule",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_ajax",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_batch_adapter_rule",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_client",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_email",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_execution_history",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_fix",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_include",
+      "columns": [
+        {
+          "name": "script",
+          "type": "server_script"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_validator",
+      "columns": [
+        {
+          "name": "validator",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_script_vtable",
+      "columns": [
+        {
+          "name": "update_script",
+          "type": "script_plain"
+        },
+        {
+          "name": "script",
+          "type": "script_plain"
+        },
+        {
+          "name": "delete_script",
+          "type": "script_plain"
+        },
+        {
+          "name": "insert_script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_scriptlet_function",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sys_ui_page",
+      "columns": [
+        {
+          "name": "processing_script",
+          "type": "script_plain"
+        },
+        {
+          "name": "client_script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_ui_policy",
+      "columns": [
+        {
+          "name": "script_true",
+          "type": "script_plain"
+        },
+        {
+          "name": "script_false",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_ui_script",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sys_ws_operation",
+      "columns": [
+        {
+          "name": "operation_script",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "name": "sysauto_script",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    },
+    {
+      "name": "sysevent_email_action",
+      "columns": [
+        {
+          "name": "advanced_condition",
+          "type": "script"
+        },
+        {
+          "name": "message_html",
+          "type": "html_script"
+        },
+        {
+          "name": "digest_separator_html",
+          "type": "html_script"
+        },
+        {
+          "name": "digest_html",
+          "type": "html_script"
+        }
+      ]
+    },
+    {
+      "name": "sysevent_email_style",
+      "columns": [
+        {
+          "name": "style",
+          "type": "html"
+        }
+      ]
+    },
+    {
+      "name": "sysevent_script_action",
+      "columns": [
+        {
+          "name": "script",
+          "type": "script_plain"
+        }
+      ]
+    }
+  ],
+  "column_types": {
+    "script": {
+      "file_name": "${column_name}",
+      "extension": "js",
+      "behavior": "javascript"
+    },
+    "script_plain": {
+      "file_name": "${column_name}",
+      "extension": "client.js",
+      "behavior": "javascript"
+    },
+    "server_script": {
+      "file_name": "${column_name}",
+      "extension": "server.js",
+      "behavior": "javascript"
+    },
+    "json": {
+      "file_name": "${column_name}",
+      "extension": "json",
+      "behavior": "application/json"
+    },
+    "css": {
+      "file_name": "${column_name}",
+      "extension": "css",
+      "behavior": "text/css"
+    },
+    "html": {
+      "file_name": "${column_name}",
+      "extension": "html",
+      "behavior": "text/html"
+    },
+    "html_template": {
+      "file_name": "${column_name}",
+      "extension": "template.html",
+      "behavior": "text/html"
+    },
+    "html_script": {
+      "file_name": "${column_name}",
+      "extension": "script.html",
+      "behavior": "text/html"
+    }
+  }
+}

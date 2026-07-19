@@ -7,11 +7,12 @@ import { Module } from '@nestjs/common';
 import { AuthenticationModule } from '../authentication/authentication.module';
 import { ConfigModule } from '../config/config.module';
 import { DatabaseModule } from '../database/database.module';
+import { SyncModule } from '../sync/sync.module';
 import { ApplicationService } from './application.service';
-import { AppCommand, AppInitCommand, AppSyncCommand } from './commands/app-init.command';
+import { AppCommand, AppInitCommand } from './commands/app-init.command';
 
 @Module({
-  imports: [AuthenticationModule, ConfigModule, DatabaseModule],
-  providers: [ApplicationService, AppCommand, AppInitCommand, AppSyncCommand],
+  imports: [AuthenticationModule, ConfigModule, DatabaseModule, SyncModule],
+  providers: [ApplicationService, AppCommand, AppInitCommand],
 })
 export class ApplicationModule {}

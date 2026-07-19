@@ -9,11 +9,11 @@
  */
 import { Op } from 'sequelize';
 import {
-  AllowNull,
-  AutoIncrement,
   AfterCreate,
   AfterUpdate,
   AfterUpsert,
+  AllowNull,
+  AutoIncrement,
   BelongsTo,
   Column,
   DataType,

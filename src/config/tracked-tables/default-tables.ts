@@ -1,53 +1,23 @@
 /**
  * @file default-tables.ts
- * INTERIM_DEFAULT_TABLES — the interim default tracked-table set (spec OS-14), used until
- * reference_docs/plans/tracked_table_list.txt is delivered — plus parseTrackedTableList(),
- * which parses that future ||/|-delimited file and strips a trailing sys_id from each table
- * name (split('_') → drop last → join('_'); sys_ids contain no '_').
+ * DEFAULT_TABLES — the shipped default tracked-table set (spec OS-14), sourced from
+ * `src/config/base.json`. That JSON is generated once from
+ * `reference_docs/plans/sys_dictionary.csv` by `scripts/build-base-config.ts` (run via
+ * `pnpm tsx scripts/build-base-config.ts`); one `column_types` entry per distinct CSV
+ * `internal_type` so each script variant (Script, Script (Plain), Script (server side),
+ * HTML, HTML Template, HTML Script, …) is tracked individually. This file also exports
+ * `parseTrackedTableList()`, which parses the future `tracked_table_list.txt` (||/|-delimited)
+ * and strips a trailing sys_id from each table name (split('_') → drop last → join('_')).
  */
-import type { ColumnType, TrackConfig, TrackedTable } from './tracked-tables.types';
+import baseConfig from '../base.json';
+import type { TrackConfig, TrackedTable } from './tracked-tables.types';
 
-/** column_types from the spec's track_tables.json example (S1/S3). */
-const DEFAULT_COLUMN_TYPES: Record<string, ColumnType> = {
-  string: { file_name: 'column_name', extension: 'txt', behavior: 'text/plain' },
-  glidescript: { file_name: 'column_name', extension: 'glide.js', behavior: 'glidescript' },
-  javascript: { file_name: 'column_name', extension: 'client.js', behavior: 'javascript' },
-  css: { file_name: 'column_name', extension: 'css', behavior: 'text/css' },
-  json: { file_name: 'column_name', extension: 'json', behavior: 'application/json' },
-  html: { file_name: 'column_name', extension: 'html', behavior: 'text/html' },
-};
-
-/** Interim default set (spec OS-14 table). Replaced by the list file when it is delivered. */
-export const INTERIM_DEFAULT_TABLES: TrackConfig = {
-  tables: [
-    { name: 'sys_script', columns: [{ name: 'script', type: 'glidescript' }] },
-    { name: 'sys_script_include', columns: [{ name: 'script', type: 'glidescript' }] },
-    { name: 'sys_script_client', columns: [{ name: 'script', type: 'javascript' }] },
-    { name: 'sys_ui_script', columns: [{ name: 'script', type: 'javascript' }] },
-    { name: 'sys_ui_action', columns: [{ name: 'script', type: 'glidescript' }] },
-    { name: 'catalog_script_client', columns: [{ name: 'script', type: 'javascript' }] },
-    {
-      name: 'sys_ui_policy',
-      columns: [
-        { name: 'script_true', type: 'javascript' },
-        { name: 'script_false', type: 'javascript' },
-      ],
-    },
-    {
-      name: 'sys_ui_policy_action',
-      columns: [
-        { name: 'script_true', type: 'javascript' },
-        { name: 'script_false', type: 'javascript' },
-      ],
-    },
-    { name: 'sys_script_fix', columns: [{ name: 'script', type: 'glidescript' }] },
-    { name: 'sysevent_script_action', columns: [{ name: 'script', type: 'glidescript' }] },
-    { name: 'sys_processor', columns: [{ name: 'script', type: 'glidescript' }] },
-    { name: 'sys_web_service', columns: [{ name: 'operation_script', type: 'glidescript' }] },
-    { name: 'sys_ws_operation', columns: [{ name: 'operation_script', type: 'glidescript' }] },
-  ],
-  column_types: DEFAULT_COLUMN_TYPES,
-};
+/**
+ * Shipped default tracked-table configuration (spec OS-14). Deep-merged with
+ * `~/.aify/track_tables.json` (global) and `.aify.config.json` (project) by
+ * TrackedTablesService.getProjectTrackTables() — project wins, nothing lost (OS-15).
+ */
+export const DEFAULT_TABLES: TrackConfig = baseConfig as TrackConfig;
 
 /**
  * Parse the tracked_table_list.txt format: rows split by '||', fields by '|' as

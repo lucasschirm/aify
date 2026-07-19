@@ -5,10 +5,10 @@
  * isolated and never touch `~/.aify/aifydb.sqlite3`. `bootstrapTestDb` also runs
  * `sync({ force: true })` for a clean schema per test.
  */
-import { Sequelize } from 'sequelize-typescript';
+import { type ModelCtor, Sequelize } from 'sequelize-typescript';
 
 /** Create (but do not sync) an in-memory sqlite Sequelize with the given models. */
-export function createInMemorySequelize(models: Function[] = []): Sequelize {
+export function createInMemorySequelize(models: ModelCtor[] = []): Sequelize {
   return new Sequelize({
     dialect: 'sqlite',
     storage: ':memory:',
@@ -18,7 +18,7 @@ export function createInMemorySequelize(models: Function[] = []): Sequelize {
 }
 
 /** Create + `sync({ force: true })` an in-memory db, ready for inserts. */
-export async function bootstrapTestDb(models: Function[] = []): Promise<Sequelize> {
+export async function bootstrapTestDb(models: ModelCtor[] = []): Promise<Sequelize> {
   const sequelize = createInMemorySequelize(models);
   await sequelize.sync({ force: true });
   return sequelize;

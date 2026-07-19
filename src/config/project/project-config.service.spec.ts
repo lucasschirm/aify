@@ -76,7 +76,7 @@ describe('ProjectConfigService', () => {
   });
 });
 
-async function mkdtemp(prefix: string): Promise<string> {
+async function mkdtemp(_prefix: string): Promise<string> {
   const { randomBytes } = await import('node:crypto');
   const tmp = path.join(tmpdir(), randomBytes(6).toString('hex'));
   await mkdir(tmp, { recursive: true });

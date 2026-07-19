@@ -6,6 +6,7 @@
  * from `GlobalConfigService.dbPath()` (the `~/.aify/aifydb.sqlite3` path).
  */
 import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ApplicationModule } from './application/application.module';
 import { AuthenticationModule } from './authentication/authentication.module';
 import { ConfigModule } from './config/config.module';
@@ -18,6 +19,7 @@ const dbPath = globalConfig.dbPath();
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     ConfigModule,
     DatabaseModule.forRoot(dbPath),
     AuthenticationModule,

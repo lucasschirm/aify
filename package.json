@@ -23,8 +23,15 @@
   "bin": {
     "aify": "dist/main.js"
   },
+  "files": [
+    "dist/",
+    "templates/"
+  ],
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build:template-db": "tsx scripts/build-template-db.ts",
@@ -35,20 +42,22 @@
     "lint": "biome ci .",
     "format": "biome format --write .",
     "verify": "pnpm lint && pnpm test && pnpm test:e2e",
+    "prepublishOnly": "pnpm build && pnpm test",
     "prepare": "husky"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
+    "@nestjs/event-emitter": "^3.0.0",
     "chokidar": "^5.0.0",
     "cli-table3": "^0.6.5",
+    "diff": "^4.0.4",
     "keytar": "^7.9.0",
     "nest-commander": "^3.20.1",
     "ora": "5.4.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "safe-merge-files": "^0.2.3",
     "sequelize": "^6.37.8",
     "sequelize-typescript": "^2.1.6",
     "sqlite3": "^6.0.1",
@@ -64,9 +73,11 @@
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.28",
     "@swc/core": "^1.15.43",
+    "@types/diff": "^5.2.3",
     "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^4.1.10",
     "commander": "11.1.0",
+    "csv-parse": "^7.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "nest-commander-testing": "^3.5.1",

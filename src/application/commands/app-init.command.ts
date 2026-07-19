@@ -9,6 +9,7 @@ import { Command, CommandRunner, Option, SubCommand } from 'nest-commander';
 import { PromptService } from '../../authentication/prompt.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { ProjectConfigService } from '../../config/project/project-config.service';
+import { AppSyncCommand } from '../../sync/sync.command';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { ApplicationService } from '../application.service';
 
@@ -54,23 +55,6 @@ export class AppInitCommand extends CommandRunner {
   })
   parseYes(): boolean {
     return true;
-  }
-}
-
-@SubCommand({
-  name: 'sync',
-  arguments: '<scope>',
-  description: 'Sync metadata for a tracked application scope.',
-})
-export class AppSyncCommand extends CommandRunner {
-  async run(params: string[]): Promise<void> {
-    const scope = params[0];
-    if (!scope) {
-      console.error('Usage: aify app sync <scope>');
-      return;
-    }
-    console.log(`Syncing scope "${scope}"…`);
-    console.log('Run `aify sync` to pull metadata for all tracked scopes.');
   }
 }
 

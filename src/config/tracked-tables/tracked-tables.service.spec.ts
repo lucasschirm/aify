@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GlobalConfigService } from '../global/global-config.service';
 import { ProjectConfigService } from '../project/project-config.service';
-import { INTERIM_DEFAULT_TABLES } from './default-tables';
+import { DEFAULT_TABLES } from './default-tables';
 import { TrackedTablesService } from './tracked-tables.service';
 
 describe('TrackedTablesService.getProjectTrackTables', () => {
@@ -48,15 +48,15 @@ describe('TrackedTablesService.getProjectTrackTables', () => {
     const merged = await service.getProjectTrackTables(projectRoot);
     const sysScript = merged.tables.find((t) => t.name === 'sys_script');
     expect(sysScript?.columns).toEqual([
-      { name: 'script', type: 'glidescript' }, // default preserved
+      { name: 'script', type: 'script' }, // default preserved
       { name: 'description', type: 'string' }, // project addition
     ]);
     // Full default set still present (nothing lost).
-    expect(merged.tables.length).toBe(INTERIM_DEFAULT_TABLES.tables.length);
+    expect(merged.tables.length).toBe(DEFAULT_TABLES.tables.length);
     // Default column_types survive the merge.
-    expect(
-      (merged.column_types as Record<string, { extension: string }>).glidescript?.extension,
-    ).toBe('glide.js');
+    expect((merged.column_types as Record<string, { extension: string }>).script?.extension).toBe(
+      'js',
+    );
   });
 
   it('lets the project override a default column type', async () => {
@@ -75,6 +75,6 @@ describe('TrackedTablesService.getProjectTrackTables', () => {
     const script = merged.tables
       .find((t) => t.name === 'sys_script')
       ?.columns.find((c) => c.name === 'script');
-    expect(script?.type).toBe('javascript'); // was 'glidescript' in the default
+    expect(script?.type).toBe('javascript'); // was 'script' in the default
   });
 });
