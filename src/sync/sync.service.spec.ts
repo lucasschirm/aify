@@ -51,6 +51,7 @@ function makeDeps(
     detectChanges: vi.fn(),
   };
   const conflictCheckStage = {
+    resolveFlaggedConflicts: vi.fn().mockResolvedValue([]),
     classify: vi.fn().mockResolvedValue([]),
     detectLocalChanges: vi.fn().mockResolvedValue([]),
   };

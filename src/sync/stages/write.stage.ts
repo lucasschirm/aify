@@ -193,7 +193,13 @@ export class WriteStage {
     await writeFileAtomic(change.filePath, merged);
     meta.$hash[change.column] = hashContent(merged);
     if (conflict) {
-      meta.$conflicts[change.column] = true; // do NOT advance the merge base
+      meta.$conflicts[change.column] = true;
+      // Pin the merge base to the conflict-time remote the user is resolving against. Once the user
+      // clears the markers, the next sync compares the resolution against this base: an unchanged
+      // remote classifies as `keep-local` (push), while a remote that changed again re-merges
+      // (base = this remote, local = resolution, remote = newer). This is what lets a resolved
+      // conflict reach the instance instead of re-generating the same markers forever.
+      meta[change.column] = change.remote;
       const rel = relative(root, change.filePath);
       result.conflicted.push(rel);
       // eslint-disable-next-line no-console

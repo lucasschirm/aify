@@ -172,7 +172,9 @@ describe('WriteStage.apply', () => {
     const meta = await new RecordMetadataService().read(folder);
     expect(meta?.$conflicts.script).toBe(true);
     expect(meta?.$hash.script).toBe(hashContent(body));
-    expect(meta?.script).toBe(base);
+    // Base advances to the conflict-time remote so a later resolution re-merges against any newer
+    // remote rather than re-generating the same markers forever.
+    expect(meta?.script).toBe(remote);
     expect(log).toHaveBeenCalledWith(
       'The file "my_scope/sys_script/rec/script.glide.js" has one or more conflicts after merge. Sync was not completed for this file.',
     );

@@ -116,6 +116,22 @@ export class SyncService {
       await this.lock.withLock(root, input.scope.scope, async () => {
         this.spinner.start(`Syncing scope "${input.scope.scope}"…`);
         try {
+          // Before pulling, settle conflicts flagged on a prior sync: clear the flag for files the
+          // user has resolved (so they push / re-merge below) and block on any that still hold
+          // markers (initial_plan.md line 283). `--force-pull` skips this — it discards local edits.
+          if (!options.forcePull) {
+            const unresolved = await this.conflictCheckStage.resolveFlaggedConflicts(
+              root,
+              input.scope.scope,
+              trackConfig,
+            );
+            if (unresolved.length > 0) {
+              throw new Error(
+                `The file "${unresolved[0]}" is in conflict. Resolve the conflict or use the "aify sync --force-pull" command to pull the latest valid content for the file.`,
+              );
+            }
+          }
+
           const pullResult = await this.pullStage.run(input);
           const changes = await this.conflictCheckStage.classify(pullResult.changed, trackConfig);
 

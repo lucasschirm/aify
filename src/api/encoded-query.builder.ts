@@ -6,15 +6,22 @@
  */
 
 /**
- * Build a `javascript:gs.dateGenerate('YYYY-MM-DD','HH:MM:SS')` clause from a ServiceNow
- * `YYYY-MM-DD HH:MM:SS` timestamp (A2).
+ * Build the `sys_updated_on>` comparison value from a stored ServiceNow timestamp.
  *
- * @param sysTimestamp A `sys_updated_on`-style timestamp string.
- * @returns The `javascript:gs.dateGenerate(...)` encoded-query value.
+ * Deliberately NOT wrapped in `javascript:gs.dateGenerate(...)`: per ServiceNow's own docs,
+ * `GlideSystem.dateGenerate()` interprets its arguments in the calling user's SESSION time
+ * zone and converts them to UTC. `sys_updated_on` values returned by the Table API are
+ * already UTC (aify never sets `sysparm_display_value`), so wrapping an already-UTC
+ * timestamp in `dateGenerate()` re-interprets it as session-local time, shifting the
+ * incremental "changed since" threshold by the session's UTC offset — silently dropping any
+ * record updated within that skew window from every subsequent pull. A plain literal value
+ * compares directly against the stored UTC `sys_updated_on`, with no timezone conversion.
+ *
+ * @param sysTimestamp A `sys_updated_on`-style "YYYY-MM-DD HH:MM:SS" UTC timestamp string.
+ * @returns The trimmed timestamp, ready to use as an encoded-query comparison value.
  */
 export function dateGenerate(sysTimestamp: string): string {
-  const [date, time] = sysTimestamp.trim().split(/\s+/);
-  return `javascript:gs.dateGenerate('${date}','${time}')`;
+  return sysTimestamp.trim();
 }
 
 /**

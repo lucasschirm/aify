@@ -195,3 +195,58 @@ describe('ConflictCheckStage.detectLocalChanges', () => {
     expect(ids).toEqual([id1, id2].sort());
   });
 });
+
+describe('ConflictCheckStage.resolveFlaggedConflicts', () => {
+  let root: string;
+  const records = new RecordMetadataService();
+  const stage = new ConflictCheckStage(records);
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), 'aify-cc-'));
+  });
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  /** Seed a record flagged as conflicted, with an arbitrary on-disk file body. */
+  async function seedConflicted(sysId: string, fileBody: string): Promise<string> {
+    const folder = join(root, 'my_scope', 'sys_script', `rec-${sysId.slice(0, 8)}`);
+    await mkdir(folder, { recursive: true });
+    await writeFile(join(folder, 'script.glide.js'), fileBody);
+    const meta: RecordMetadata = {
+      $sys_id: sysId,
+      $table: 'sys_script',
+      $display_value: `Rec ${sysId}`,
+      $parsed_display_value: `rec-${sysId.slice(0, 8)}`,
+      $sys_updated_on: '2026-07-10 12:00:00',
+      $sys_mod_count: 3,
+      script: 'remote-seen',
+      $hash: { script: hashContent('<<<<<<< HEAD\nlocal\n=======\nremote-seen\n>>>>>>> New-HEAD') },
+      $conflicts: { script: true },
+    };
+    await records.write(folder, meta);
+    return folder;
+  }
+
+  it('clears the flag and returns [] when the file has been resolved', async () => {
+    const folder = await seedConflicted('rec00000000000000000000000000001', 'user-resolved');
+    const unresolved = await stage.resolveFlaggedConflicts(root, 'my_scope', TRACK);
+    expect(unresolved).toEqual([]);
+    const meta = await records.read(folder);
+    expect(meta?.$conflicts.script).toBe(false);
+  });
+
+  it('returns the relative path and leaves the flag when markers remain', async () => {
+    const markers = '<<<<<<< HEAD\nlocal\n=======\nremote-seen\n>>>>>>> New-HEAD';
+    const folder = await seedConflicted('rec00000000000000000000000000002', markers);
+    const unresolved = await stage.resolveFlaggedConflicts(root, 'my_scope', TRACK);
+    expect(unresolved).toEqual([join('my_scope', 'sys_script', 'rec-rec00000', 'script.glide.js')]);
+    const meta = await records.read(folder);
+    expect(meta?.$conflicts.script).toBe(true);
+  });
+
+  it('ignores records that are not flagged as conflicted', async () => {
+    await seedLocal(root, 'rec00000000000000000000000000003', 'clean');
+    const unresolved = await stage.resolveFlaggedConflicts(root, 'my_scope', TRACK);
+    expect(unresolved).toEqual([]);
+  });
+});

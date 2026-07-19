@@ -7,7 +7,7 @@
  */
 
 import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { Injectable } from '@nestjs/common';
 import { hashContent } from '../../common/hashing/content-hash';
 import type { TrackConfig } from '../../config/tracked-tables/tracked-tables.types';
@@ -15,10 +15,46 @@ import type { TrackConfig } from '../../config/tracked-tables/tracked-tables.typ
 import { RecordMetadataService } from '../../record-metadata/record-metadata.service';
 import type { ColumnChange, ConflictClass } from '../sync.types';
 import type { PulledRecord } from './pull.stage';
+import { hasConflictMarkers } from './write.stage';
 
 @Injectable()
 export class ConflictCheckStage {
   constructor(private readonly records: RecordMetadataService) {}
+
+  /**
+   * Pre-pass over a scope's records for columns flagged `$conflicts=true` on a prior sync
+   * (initial_plan.md line 283). A column whose file still holds git markers is unresolved — its
+   * relative path is returned so the caller can block the sync. A column with no markers has been
+   * resolved by the user: its `$conflicts` flag is cleared and persisted so `PushStage` will upload
+   * it and `classify` can re-merge it against a newer remote. Returns every unresolved file's path
+   * (relative to `root`).
+   */
+  async resolveFlaggedConflicts(
+    root: string,
+    scope: string,
+    trackConfig: TrackConfig,
+  ): Promise<string[]> {
+    const map = await this.records.loadScopeMap(root, scope);
+    const unresolved: string[] = [];
+    for (const { folder, meta } of map.values()) {
+      const columns = trackConfig.tables.find((t) => t.name === meta.$table)?.columns ?? [];
+      let dirty = false;
+      for (const col of columns) {
+        if (meta.$conflicts[col.name] !== true) continue;
+        const ext = trackConfig.column_types[col.type]?.extension ?? 'txt';
+        const filePath = join(folder, `${col.name}.${ext}`);
+        const local = await readFile(filePath, 'utf8').catch(() => '');
+        if (hasConflictMarkers(local)) {
+          unresolved.push(relative(root, filePath));
+        } else {
+          meta.$conflicts[col.name] = false; // resolved → let it push / re-merge
+          dirty = true;
+        }
+      }
+      if (dirty) await this.records.write(folder, meta);
+    }
+    return unresolved;
+  }
 
   /** Classify every tracked column of every carried-over record. */
   async classify(records: PulledRecord[], trackConfig: TrackConfig): Promise<ColumnChange[]> {
