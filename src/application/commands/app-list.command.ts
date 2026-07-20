@@ -22,7 +22,9 @@ const HEADERS = ['scope', 'name', 'last_synced'];
 
 /** Render the application list as a formatted cli-table3 table. Pure — no I/O. */
 export function renderAppList(rows: AppListRow[]): string {
-  const table = new Table({ head: HEADERS });
+  // style.head/border: [] disables cli-table3's ANSI color wrapping so output is deterministic
+  // plain text regardless of the terminal's color-support detection (TERM/COLORTERM/FORCE_COLOR).
+  const table = new Table({ head: HEADERS, style: { head: [], border: [] } });
   if (rows.length === 0) {
     table.push([{ content: '_no applications tracked_', colSpan: HEADERS.length }]);
     return table.toString();
