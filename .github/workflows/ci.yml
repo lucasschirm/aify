@@ -37,3 +37,6 @@ jobs:
 
       - name: Tests + coverage (>=80% enforced by vitest thresholds)
         run: pnpm vitest run --coverage
+
+      - name: E2E Tests
+        run: pnpm test:e2e
