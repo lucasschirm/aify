@@ -74,6 +74,133 @@ describe('ProjectConfigService', () => {
     const config = await service.read(dir);
     expect(config.auth?.failedAttempts).toBe(0);
   });
+
+  it('adds a column type and persists it', async () => {
+    const dir = path.join(home, 'columns');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const def = { file_name: 'script', extension: '.js', behavior: 'inline' };
+    await service.addColumnType(dir, 'script', def);
+    const config = await service.read(dir);
+    expect(config.column_types?.script).toEqual(def);
+  });
+
+  it('overrides a column type when calling addColumnType again', async () => {
+    const dir = path.join(home, 'override');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const oldDef = { file_name: 'old', extension: '.old', behavior: 'old' };
+    const newDef = { file_name: 'new', extension: '.new', behavior: 'new' };
+    await service.addColumnType(dir, 'script', oldDef);
+    await service.addColumnType(dir, 'script', newDef);
+    const config = await service.read(dir);
+    expect(config.column_types?.script).toEqual(newDef);
+  });
+
+  it('adds a tracked table and persists it', async () => {
+    const dir = path.join(home, 'tables');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const table = {
+      name: 'sys_script',
+      columns: [{ name: 'script', type: 'script' }],
+    };
+    await service.addTrackedTable(dir, table);
+    const config = await service.read(dir);
+    expect(config.tables).toHaveLength(1);
+    expect(config.tables?.[0]).toEqual(table);
+  });
+
+  it('merges columns into an existing table when calling addTrackedTable again', async () => {
+    const dir = path.join(home, 'merge');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const table1 = {
+      name: 'sys_script',
+      columns: [{ name: 'script', type: 'script' }],
+    };
+    const table2 = {
+      name: 'sys_script',
+      columns: [{ name: 'description', type: 'string' }],
+    };
+    await service.addTrackedTable(dir, table1);
+    await service.addTrackedTable(dir, table2);
+    const config = await service.read(dir);
+    expect(config.tables).toHaveLength(1);
+    const merged = config.tables?.[0];
+    expect(merged?.name).toBe('sys_script');
+    expect(merged?.columns).toContainEqual({ name: 'script', type: 'script' });
+    expect(merged?.columns).toContainEqual({ name: 'description', type: 'string' });
+  });
+
+  it('overrides a column type when merging tables', async () => {
+    const dir = path.join(home, 'type-override');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const table1 = {
+      name: 'sys_script',
+      columns: [{ name: 'script', type: 'script' }],
+    };
+    const table2 = {
+      name: 'sys_script',
+      columns: [{ name: 'script', type: 'script_plain' }],
+    };
+    await service.addTrackedTable(dir, table1);
+    await service.addTrackedTable(dir, table2);
+    const config = await service.read(dir);
+    const merged = config.tables?.[0];
+    expect(merged?.columns).toEqual([{ name: 'script', type: 'script_plain' }]);
+  });
+
+  it('removeTrackedColumn removes one column from a table with multiple columns', async () => {
+    const dir = path.join(home, 'remove-col');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const table = {
+      name: 'sys_script',
+      columns: [
+        { name: 'script', type: 'script' },
+        { name: 'description', type: 'string' },
+      ],
+    };
+    await service.addTrackedTable(dir, table);
+    await service.removeTrackedColumn(dir, 'sys_script', 'script');
+
+    const config = await service.read(dir);
+    expect(config.tables).toHaveLength(1);
+    expect(config.tables?.[0].columns).toEqual([{ name: 'description', type: 'string' }]);
+  });
+
+  it('removeTrackedColumn drops the table entry when removing its only/last column', async () => {
+    const dir = path.join(home, 'remove-table');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const table = {
+      name: 'sys_script',
+      columns: [{ name: 'script', type: 'script' }],
+    };
+    await service.addTrackedTable(dir, table);
+    await service.removeTrackedColumn(dir, 'sys_script', 'script');
+
+    const config = await service.read(dir);
+    expect(config.tables).toHaveLength(0);
+  });
+
+  it('removeTrackedColumn is a no-op on an absent table', async () => {
+    const dir = path.join(home, 'remove-noop');
+    await mkdir(dir, { recursive: true });
+    await service.ensureProjectRoot(dir);
+    const table = {
+      name: 'sys_script',
+      columns: [{ name: 'script', type: 'script' }],
+    };
+    await service.addTrackedTable(dir, table);
+    await service.removeTrackedColumn(dir, 'sys_app', 'name');
+
+    const config = await service.read(dir);
+    expect(config.tables).toHaveLength(1);
+    expect(config.tables?.[0]).toEqual(table);
+  });
 });
 
 async function mkdtemp(_prefix: string): Promise<string> {

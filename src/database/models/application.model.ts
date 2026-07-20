@@ -10,6 +10,7 @@ import {
   AutoIncrement,
   Column,
   DataType,
+  Default,
   Model,
   PrimaryKey,
   Table,
@@ -40,4 +41,10 @@ export class Application extends Model {
   @AllowNull(false)
   @Column({ type: DataType.STRING(120) })
   declare displayValue: string;
+
+  /** Timestamp of the last successful sync, or null if never synced. */
+  @AllowNull(true)
+  @Default(null)
+  @Column({ type: DataType.DATE })
+  declare lastSyncedAt: Date | null;
 }

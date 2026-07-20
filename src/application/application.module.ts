@@ -10,9 +10,10 @@ import { DatabaseModule } from '../database/database.module';
 import { SyncModule } from '../sync/sync.module';
 import { ApplicationService } from './application.service';
 import { AppCommand, AppInitCommand } from './commands/app-init.command';
+import { AppListCommand } from './commands/app-list.command';
 
 @Module({
   imports: [AuthenticationModule, ConfigModule, DatabaseModule, SyncModule],
-  providers: [ApplicationService, AppCommand, AppInitCommand],
+  providers: [ApplicationService, AppCommand, AppInitCommand, AppListCommand],
 })
 export class ApplicationModule {}

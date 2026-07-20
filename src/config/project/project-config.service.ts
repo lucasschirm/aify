@@ -10,6 +10,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { Injectable } from '@nestjs/common';
+import {
+  removeTrackedColumn,
+  upsertColumnType,
+  upsertTrackedTable,
+} from '../tracked-tables/track-merge';
+import type { ColumnType, TrackedTable } from '../tracked-tables/tracked-tables.types';
 import type { AifyProjectConfig } from './project-config.types';
 
 const CONFIG_FILE = '.aify.config.json';
@@ -81,6 +87,45 @@ export class ProjectConfigService {
   async resetAuthFailures(root: string): Promise<void> {
     const config = await this.read(root);
     config.auth = { failedAttempts: 0 };
+    await this.write(root, config);
+  }
+
+  /**
+   * Upsert a column type into the project config. Overwrites an existing entry with the same name.
+   *
+   * @param root The project root directory.
+   * @param name The column type name (e.g., "script", "json").
+   * @param def The ColumnType definition { file_name, extension, behavior }.
+   */
+  async addColumnType(root: string, name: string, def: ColumnType): Promise<void> {
+    const config = await this.read(root);
+    config.column_types = upsertColumnType(config.column_types, name, def);
+    await this.write(root, config);
+  }
+
+  /**
+   * Upsert a table into the project config. If the table already exists, merges its columns
+   * (existing columns preserved, new/overridden columns updated).
+   *
+   * @param root The project root directory.
+   * @param table The TrackedTable to add or merge.
+   */
+  async addTrackedTable(root: string, table: TrackedTable): Promise<void> {
+    const config = await this.read(root);
+    config.tables = upsertTrackedTable(config.tables, table);
+    await this.write(root, config);
+  }
+
+  /**
+   * Remove a tracked column from the project config. Drops the table entry if it becomes empty.
+   *
+   * @param root The project root directory.
+   * @param tableName The table name.
+   * @param columnName The column name to remove.
+   */
+  async removeTrackedColumn(root: string, tableName: string, columnName: string): Promise<void> {
+    const config = await this.read(root);
+    config.tables = removeTrackedColumn(config.tables, tableName, columnName);
     await this.write(root, config);
   }
 }

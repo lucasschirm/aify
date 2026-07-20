@@ -4,8 +4,9 @@
  * and pipeline sequencing.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AifyProjectConfig } from '../config/project/project-config.types';
+import { Application } from '../database/models/application.model';
 import { SyncService } from './sync.service';
 
 const snAuth = { instanceUrl: 'https://dev123.service-now.com', username: 'u', password: 'p' };
@@ -100,7 +101,14 @@ function makeDeps(
 }
 
 describe('SyncService.run', () => {
-  beforeEach(() => vi.restoreAllMocks());
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(Application, 'update').mockResolvedValue([0]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('rejects when the project has no tracked scopes', async () => {
     const { svc } = makeDeps({ scopes: [] });
@@ -156,5 +164,14 @@ describe('SyncService.run', () => {
     expect(withLock).toHaveBeenCalledTimes(2);
     expect(withLock).toHaveBeenNthCalledWith(1, '/proj', 'scope_a', expect.any(Function));
     expect(withLock).toHaveBeenNthCalledWith(2, '/proj', 'scope_b', expect.any(Function));
+  });
+
+  it('stamps lastSyncedAt on successful sync', async () => {
+    const { svc } = makeDeps({ scopes: [{ sysId: 's1', scope: 'my_scope' }] });
+    await svc.run({ yes: true });
+    expect(Application.update).toHaveBeenCalledWith(
+      { lastSyncedAt: expect.any(Date) },
+      { where: { scope: 'my_scope' } },
+    );
   });
 });

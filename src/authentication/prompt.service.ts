@@ -6,7 +6,7 @@
  */
 
 import { emitKeypressEvents } from 'node:readline';
-import { confirm, input, password, select } from '@inquirer/prompts';
+import { checkbox, confirm, input, password, select } from '@inquirer/prompts';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -29,6 +29,14 @@ export class PromptService {
   /** Single-choice selection prompt. */
   select<T>(message: string, choices: { name: string; value: T }[]): Promise<T> {
     return select({ message, choices });
+  }
+
+  /** Multi-choice checkbox prompt. Returns the selected values. */
+  checkbox<T>(
+    message: string,
+    choices: { name: string; value: T; checked?: boolean; disabled?: boolean | string }[],
+  ): Promise<T[]> {
+    return checkbox({ message, choices });
   }
 
   /**

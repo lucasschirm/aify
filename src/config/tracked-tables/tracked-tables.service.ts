@@ -13,7 +13,13 @@ import { GlobalConfigService } from '../global/global-config.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { ProjectConfigService } from '../project/project-config.service';
 import { DEFAULT_TABLES } from './default-tables';
-import type { ColumnType, TrackConfig, TrackedColumn, TrackedTable } from './tracked-tables.types';
+import type {
+  ColumnType,
+  TrackConfig,
+  TrackedColumn,
+  TrackedTable,
+  TrackSource,
+} from './tracked-tables.types';
 
 @Injectable()
 export class TrackedTablesService {
@@ -30,6 +36,30 @@ export class TrackedTablesService {
     merged = mergeTrackConfig(merged, await this.readGlobal());
     merged = mergeTrackConfig(merged, await this.readProject(projectRoot));
     return merged;
+  }
+
+  /**
+   * Resolve the winning tracking source layer for each tracked column of `tableName`, applying the
+   * same precedence as getProjectTrackTables: package (DEFAULT_TABLES) < global < project.
+   * The map key is a column name; the value is the layer that currently "wins" that column.
+   * A column absent from all layers is absent from the map.
+   *
+   * @param projectRoot The project root directory.
+   * @param tableName The table name to resolve sources for.
+   * @returns A map where keys are column names and values are the winning TrackSource layer.
+   */
+  async getColumnSources(
+    projectRoot: string,
+    tableName: string,
+  ): Promise<Map<string, TrackSource>> {
+    const sources = new Map<string, TrackSource>();
+    const pkg = DEFAULT_TABLES.tables.find((t) => t.name === tableName);
+    for (const c of pkg?.columns ?? []) sources.set(c.name, 'package');
+    const global = (await this.readGlobal()).tables?.find((t) => t.name === tableName);
+    for (const c of global?.columns ?? []) sources.set(c.name, 'global');
+    const project = (await this.readProject(projectRoot)).tables?.find((t) => t.name === tableName);
+    for (const c of project?.columns ?? []) sources.set(c.name, 'project');
+    return sources;
   }
 
   private async readGlobal(): Promise<Partial<TrackConfig>> {

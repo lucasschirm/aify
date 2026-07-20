@@ -78,3 +78,87 @@ describe('TrackedTablesService.getProjectTrackTables', () => {
     expect(script?.type).toBe('javascript'); // was 'script' in the default
   });
 });
+
+describe('TrackedTablesService.getColumnSources', () => {
+  let home: string;
+  let projectRoot: string;
+  let originalHome: string | undefined;
+  let service: TrackedTablesService;
+
+  beforeEach(async () => {
+    home = await mkdtemp(path.join(tmpdir(), 'aify-cs-home-'));
+    projectRoot = await mkdtemp(path.join(tmpdir(), 'aify-cs-proj-'));
+    originalHome = process.env.HOME;
+    process.env.HOME = home;
+    await mkdir(path.join(home, '.aify'), { recursive: true });
+    service = new TrackedTablesService(new GlobalConfigService(), new ProjectConfigService());
+  });
+
+  afterEach(async () => {
+    if (originalHome === undefined) delete process.env.HOME;
+    else process.env.HOME = originalHome;
+    await rm(home, { recursive: true, force: true });
+    await rm(projectRoot, { recursive: true, force: true });
+  });
+
+  it('with no global/project config files, resolves columns to package source', async () => {
+    const sources = await service.getColumnSources(projectRoot, 'sys_script_include');
+    expect(sources.get('script')).toBe('package');
+  });
+
+  it('resolves a new global column to global source and keeps package columns', async () => {
+    const trackPath = path.join(home, '.aify', 'track_tables.json');
+    await mkdir(path.dirname(trackPath), { recursive: true });
+    await writeFile(
+      trackPath,
+      JSON.stringify({
+        tables: [
+          {
+            name: 'sys_script_include',
+            columns: [{ name: 'access', type: 'string' }],
+          },
+        ],
+      }),
+      'utf8',
+    );
+    const sources = await service.getColumnSources(projectRoot, 'sys_script_include');
+    expect(sources.get('access')).toBe('global');
+    expect(sources.get('script')).toBe('package');
+  });
+
+  it('lets project override package source', async () => {
+    const trackPath = path.join(home, '.aify', 'track_tables.json');
+    await mkdir(path.dirname(trackPath), { recursive: true });
+    await writeFile(
+      trackPath,
+      JSON.stringify({
+        tables: [
+          {
+            name: 'sys_script_include',
+            columns: [{ name: 'access', type: 'string' }],
+          },
+        ],
+      }),
+      'utf8',
+    );
+    await writeFile(
+      path.join(projectRoot, '.aify.config.json'),
+      JSON.stringify({
+        tables: [
+          {
+            name: 'sys_script_include',
+            columns: [{ name: 'script', type: 'server_script' }],
+          },
+        ],
+      }),
+    );
+    const sources = await service.getColumnSources(projectRoot, 'sys_script_include');
+    expect(sources.get('script')).toBe('project');
+    expect(sources.get('access')).toBe('global');
+  });
+
+  it('omits from map a column name that exists in no layer', async () => {
+    const sources = await service.getColumnSources(projectRoot, 'sys_script_include');
+    expect(sources.has('does_not_exist')).toBe(false);
+  });
+});

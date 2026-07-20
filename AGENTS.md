@@ -4,15 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project purpose
 
-`aify` is intended to be a ServiceNow CLI that connects to a ServiceNow instance using **basic authentication** and the **Table API** to fetch application metadata and download all of that metadata into local files.
+`aify` is a ServiceNow CLI (published as `@lucasschirm/aify`, invoked as `aify`) that connects to a ServiceNow instance using **basic authentication** and the **Table API** to fetch application metadata and sync it to local files with a merge/conflict structure.
 
-**Status:** greenfield. No application source code exists yet — only project scaffolding, vendored reference documentation, and a docs-maintenance script. When building the CLI, treat this document's "purpose" as the spec and confirm design decisions (command surface, output file layout, config/credential handling) before implementing.
+**Status:** actively developed. The CLI is implemented under `src/` as a **NestJS** application (nest-commander commands for `auth` and `sync`, plus api/config/database/sync/authentication domains). Each domain folder has its own `AGENTS.md` — read the nearest one before editing.
 
 ## Stack & commands
 
-- Node.js, **ES modules** (`"type": "module"` in `package.json`).
-- Package manager is **pnpm** (`devEngines.packageManager` pins `^11.9.0`; it auto-downloads on mismatch). Use `pnpm`, not `npm`/`yarn`.
-- `package.json` `main` is `index.js` (not yet created). No real `test`/`build`/`lint` scripts are defined yet — the `test` script is still the placeholder stub. Add these as the project takes shape.
+- Node.js **>= 22**, **CommonJS** (`"type": "commonjs"`), TypeScript 5.x with `experimentalDecorators` + `emitDecoratorMetadata` (NestJS DI). `package.json` `main`/`bin` is `dist/main.js`; `nest build` compiles `src/` → `dist/`.
+- Package manager is **pnpm**. Use `pnpm`, not `npm`/`yarn`.
+- Framework: **NestJS** + **nest-commander** for the CLI; **sequelize-typescript** + sqlite for local storage; **keytar** for OS-keychain credentials; **@inquirer/prompts** for interactive input.
+- **Tooling & gates** (a change is "done" only when these are green):
+  - `pnpm typecheck` — `tsc --noEmit`. The **type authority**; vitest runs on SWC and does NOT type-check.
+  - `pnpm lint` — `biome ci .` (formatter + linter; `noExplicitAny` is an error).
+  - `pnpm test` — `vitest run` (unit + spec).
+  - `pnpm test:e2e` — command-level E2E via `nest-commander-testing`'s `CommandTestFactory` (see `src/test/README.md`).
+  - `vitest run --coverage` — coverage thresholds of **80%** (lines/functions/branches/statements) are enforced in `vitest.config.ts`; a run below threshold exits non-zero.
+- **NestJS note:** DI requires value imports for runtime metadata, so `// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata` is an expected, correct pattern — not a lint violation to remove.
 
 ## ServiceNow Table API — the integration contract
 

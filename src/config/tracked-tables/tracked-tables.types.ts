@@ -24,3 +24,10 @@ export interface TrackConfig {
   tables: TrackedTable[];
   column_types: Record<string, ColumnType>;
 }
+
+/**
+ * The source layer of a tracked column: 'package' (DEFAULT_TABLES),
+ * 'global' (~/.aify/track_tables.json), or 'project' (.aify.config.json).
+ * Used to resolve which layer currently "owns" or "wins" a tracked column.
+ */
+export type TrackSource = 'package' | 'global' | 'project';

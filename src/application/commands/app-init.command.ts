@@ -12,6 +12,7 @@ import { ProjectConfigService } from '../../config/project/project-config.servic
 import { AppSyncCommand } from '../../sync/sync.command';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { ApplicationService } from '../application.service';
+import { AppListCommand } from './app-list.command';
 
 interface AppInitOptions {
   yes?: boolean;
@@ -61,7 +62,7 @@ export class AppInitCommand extends CommandRunner {
 @Command({
   name: 'app',
   description: 'Track a ServiceNow scoped application locally.',
-  subCommands: [AppInitCommand, AppSyncCommand],
+  subCommands: [AppInitCommand, AppSyncCommand, AppListCommand],
 })
 export class AppCommand extends CommandRunner {
   async run(): Promise<void> {

@@ -1,0 +1,25 @@
+<sys_script_include>
+<element name="client_callable" internal_type="boolean" max_length="40" choice_list="false" active_status="true"/>
+<element name="access" internal_type="string" max_length="40" choice_list="true" active_status="true"/>
+<element name="mobile_callable" internal_type="boolean" max_length="40" choice_list="false" active_status="true"/>
+<element name="sys_mod_count" internal_type="integer" max_length="40" choice_list="false" active_status="true"/>
+<element name="description" internal_type="string" max_length="4000" choice_list="false" active_status="true"/>
+<element name="active" internal_type="boolean" max_length="40" choice_list="false" active_status="true"/>
+<element name="sys_updated_on" internal_type="glide_date_time" max_length="40" choice_list="false" active_status="true"/>
+<element name="sys_tags" internal_type="related_tags" max_length="0" choice_list="false" active_status="true"/>
+<element name="sandbox_callable" internal_type="boolean" max_length="40" choice_list="false" active_status="true"/>
+<element name="script" internal_type="script_plain" max_length="8000" choice_list="false" active_status="true"/>
+<element name="sys_class_name" internal_type="sys_class_name" max_length="80" choice_list="true" active_status="true"/>
+<element name="sys_id" internal_type="GUID" max_length="32" choice_list="false" active_status="true"/>
+<element name="sys_package" internal_type="reference" max_length="32" choice_list="false" active_status="true" display_field="name" reference_table="sys_package" reference_field_max_length="100"/>
+<element name="sys_update_name" internal_type="string" max_length="250" choice_list="false" active_status="true"/>
+<element name="sys_updated_by" internal_type="string" max_length="40" choice_list="false" active_status="true"/>
+<element name="api_name" internal_type="string" max_length="100" choice_list="false" active_status="true"/>
+<element name="sys_created_on" internal_type="glide_date_time" max_length="40" choice_list="false" active_status="true"/>
+<element name="caller_access" internal_type="string" max_length="40" choice_list="true" active_status="true"/>
+<element name="name" internal_type="string" max_length="100" choice_list="false" active_status="true"/>
+<element name="sys_name" internal_type="string" max_length="255" choice_list="false" active_status="true"/>
+<element name="sys_scope" internal_type="reference" max_length="32" choice_list="false" active_status="true" display_field="name" reference_table="sys_scope" reference_field_max_length="100"/>
+<element name="sys_created_by" internal_type="string" max_length="40" choice_list="false" active_status="true"/>
+<element name="sys_policy" internal_type="string" max_length="40" choice_list="true" active_status="true"/>
+</sys_script_include>

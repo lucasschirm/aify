@@ -4,6 +4,7 @@
  * auth service, prompt wrapper, Table API client, and the auth commands.
  */
 import { Module } from '@nestjs/common';
+import { SnHttpClient } from '../api/sn-http.client';
 import { TableApiClient } from '../api/table-api.client';
 import { ConfigModule } from '../config/config.module';
 import { DatabaseModule } from '../database/database.module';
@@ -22,6 +23,7 @@ import { PromptService } from './prompt.service';
 @Module({
   imports: [DatabaseModule, ConfigModule, UiModule],
   providers: [
+    SnHttpClient,
     TableApiClient,
     CredentialStore,
     AuthService,
@@ -34,6 +36,6 @@ import { PromptService } from './prompt.service';
     AuthUseCommand,
     AuthVerifyCommand,
   ],
-  exports: [TableApiClient, AuthService, PromptService],
+  exports: [SnHttpClient, TableApiClient, AuthService, PromptService],
 })
 export class AuthenticationModule {}

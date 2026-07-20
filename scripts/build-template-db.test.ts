@@ -25,6 +25,12 @@ describe('buildTemplateDb', () => {
     );
     const tables = (rows as { name: string }[]).map((r) => r.name);
     expect(tables).toEqual(['applications', 'auth', 'instances']);
+
+    // Verify the applications table has a lastSyncedAt column
+    const [columns] = await sequelize.query('PRAGMA table_info(applications)');
+    const columnNames = (columns as { name: string }[]).map((c) => c.name);
+    expect(columnNames).toContain('lastSyncedAt');
+
     await sequelize.close();
   });
 

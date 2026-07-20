@@ -40,6 +40,8 @@ Commander writes help via `process.stdout.write` (its configured `writeOut`),
 | File | Purpose |
 |------|---------|
 | `auth.e2e.spec.ts` | E2E for the `aify auth` group — runs `auth` with no subcommand and asserts the help output contains the description and all registered subcommands. |
+| `app.e2e.spec.ts` | E2E for the `aify app list` command — verifies output when in/not in an aify project, and asserts application names and last-sync times are rendered correctly. |
+| `tracker.e2e.spec.ts` | E2E for the `aify tracker` commands — exercises `aify tracker types add --global`, `aify tracker types add --table`, and `aify tracker tables add` with column preselection, package-layer disabling, removal confirmation, and per-layer deletion (project/global). |
 
 ## Notes
 

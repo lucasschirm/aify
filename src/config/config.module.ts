@@ -8,16 +8,23 @@
 import { Module } from '@nestjs/common';
 import { GlobalConfigService } from './global/global-config.service';
 import { ProjectConfigService } from './project/project-config.service';
+import { GlobalTrackTablesService } from './tracked-tables/global-track-tables.service';
 import { TrackedTablesService } from './tracked-tables/tracked-tables.service';
 import { VerboseBootstrapService } from './verbose-bootstrap.service';
 
 @Module({
   providers: [
     GlobalConfigService,
+    GlobalTrackTablesService,
     ProjectConfigService,
     TrackedTablesService,
     VerboseBootstrapService,
   ],
-  exports: [GlobalConfigService, ProjectConfigService, TrackedTablesService],
+  exports: [
+    GlobalConfigService,
+    GlobalTrackTablesService,
+    ProjectConfigService,
+    TrackedTablesService,
+  ],
 })
 export class ConfigModule {}

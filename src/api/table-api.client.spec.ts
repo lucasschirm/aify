@@ -133,6 +133,58 @@ describe('TableApiClient.getOne', () => {
 
     expect(record).toBeNull();
   });
+
+  it('queries with sysparm_fields when a fields array is provided', async () => {
+    nock(HOST, { reqheaders: { authorization: basic } })
+      .get('/api/now/v2/table/sys_metadata/abc')
+      .query({ sysparm_fields: 'a,b' })
+      .reply(200, { result: { sys_id: 'abc', a: 'val1', b: 'val2' } });
+
+    const client = new TableApiClient({ maxAttempts: 3, delayMs: 1 });
+    const record = await client.getOne(auth, 'sys_metadata', 'abc', ['a', 'b']);
+
+    expect(record).toEqual({ sys_id: 'abc', a: 'val1', b: 'val2' });
+  });
+
+  it('returns null when response body has no result key', async () => {
+    nock(HOST, { reqheaders: { authorization: basic } })
+      .get('/api/now/v2/table/sys_metadata/xyz')
+      .reply(200, {});
+
+    const client = new TableApiClient({ maxAttempts: 3, delayMs: 1 });
+    const record = await client.getOne(auth, 'sys_metadata', 'xyz');
+
+    expect(record).toBeNull();
+  });
+
+  it('sends query and pagination with limit and query in list', async () => {
+    const scope = nock(HOST, { reqheaders: { authorization: basic } })
+      .get('/api/now/v2/table/sys_metadata')
+      .query({
+        sysparm_query: 'active=true',
+        sysparm_limit: '5',
+      })
+      .reply(200, { result: [{ sys_id: '1' }, { sys_id: '2' }] });
+
+    const client = new TableApiClient({ maxAttempts: 3, delayMs: 1 });
+    const records = await client.list(auth, 'sys_metadata', { query: 'active=true', limit: 5 });
+
+    expect(records).toHaveLength(2);
+    expect(scope.isDone()).toBe(true);
+  });
+
+  it('sends only query without fields or limit in list', async () => {
+    nock(HOST)
+      .get('/api/now/v2/table/sys_metadata')
+      .query({ sysparm_query: 'active=true' })
+      .reply(200, { result: [{ sys_id: '1' }] });
+
+    const client = new TableApiClient({ maxAttempts: 3, delayMs: 1 });
+    const records = await client.list(auth, 'sys_metadata', { query: 'active=true' });
+
+    expect(records).toHaveLength(1);
+    expect(nock.isDone()).toBe(true);
+  });
 });
 
 describe('TableApiClient.patch', () => {

@@ -50,4 +50,29 @@ describe('Application model', () => {
 
     await sequelize.close();
   });
+
+  it('defaults lastSyncedAt to null and can persist and read back a Date', async () => {
+    const sequelize = buildSequelize(':memory:');
+    await sequelize.sync();
+
+    const app = await Application.create({
+      scope: 'x_acme_app',
+      sysId: '00a1b2c3d4e5f60718293a4b5c6d7e8f',
+      displayValue: 'Acme App',
+    });
+
+    expect(app.lastSyncedAt).toBeNull();
+
+    const now = new Date();
+    app.lastSyncedAt = now;
+    await app.save();
+
+    const reloaded = await Application.findByPk(app.id);
+    expect(reloaded?.lastSyncedAt).toBeDefined();
+    if (reloaded?.lastSyncedAt) {
+      expect(new Date(reloaded.lastSyncedAt).getTime()).toBeCloseTo(now.getTime(), -2);
+    }
+
+    await sequelize.close();
+  });
 });

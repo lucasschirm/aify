@@ -17,6 +17,7 @@ import { PromptService } from '../authentication/prompt.service';
 import { ProjectConfigService } from '../config/project/project-config.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { TrackedTablesService } from '../config/tracked-tables/tracked-tables.service';
+import { Application } from '../database/models/application.model';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { RecordMetadataService } from '../record-metadata/record-metadata.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
@@ -166,6 +167,10 @@ export class SyncService {
           }
 
           this.spinner.succeed(`Scope "${input.scope.scope}" synced.`);
+          await Application.update(
+            { lastSyncedAt: new Date() },
+            { where: { scope: input.scope.scope } },
+          );
         } catch (err) {
           this.spinner.fail(`Scope "${input.scope.scope}" failed.`);
           throw err;

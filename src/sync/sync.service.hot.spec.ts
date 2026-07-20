@@ -5,11 +5,18 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Application } from '../database/models/application.model';
 import { SyncService } from './sync.service';
 
 describe('SyncService hot mode', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(Application, 'update').mockResolvedValue([0]);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   /** Build a SyncService with just the hot-path collaborators stubbed. */
   const build = (detected: number[]) => {

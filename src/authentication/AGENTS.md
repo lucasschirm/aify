@@ -15,7 +15,8 @@ table holds metadata only.
 | `auth.service.spec.ts` | Tests AuthService with in-memory SQLite, mocked TableApiClient and CredentialStore. |
 | `authentication.module.ts` | NestJS module wiring the services and `auth` commands. |
 | `authentication.module.spec.ts` | Module compilation smoke test. |
-| `prompt.service.ts` | `PromptService` — injectable, mockable wrapper over `@inquirer/prompts` (input/password/confirm/select). |
+| `prompt.service.ts` | `PromptService` — injectable, mockable wrapper over `@inquirer/prompts` (input/password/confirm/select/checkbox). Also wraps `awaitKeypress` (print a message, wait for a single key, resolve false on ESC/Ctrl+C, true otherwise). |
+| `prompt.service.spec.ts` | Unit tests for PromptService — mocks all inquirer prompts and tests the wrapper methods map to correct inquirer calls; awaitKeypress tested without mocking inquirer (uses a mocked non-TTY stdin). |
 | `commands/auth.command.ts` | Parent `aify auth` group (subcommands registered here). |
 | `commands/auth-add.command.ts` | `aify auth add` — masked password prompt, no `--password` flag. |
 | `commands/auth-add.command.spec.ts` | Tests AuthAddCommand with mocked AuthService and PromptService. |
