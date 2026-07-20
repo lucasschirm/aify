@@ -34,17 +34,25 @@ const DEFAULT_OUTPUT_PATH = join(__dirname, '..', 'src', 'config', 'base.json');
  * is per column and the slug is the folder). Extensions distinguish the script variants.
  */
 const COLUMN_TYPES: Record<string, ColumnType> = {
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   script: { file_name: '${column_name}', extension: 'js', behavior: 'javascript' },
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   script_plain: { file_name: '${column_name}', extension: 'client.js', behavior: 'javascript' },
   script_server_side: {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
     file_name: '${column_name}',
     extension: 'server.js',
     behavior: 'javascript',
   },
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   json: { file_name: '${column_name}', extension: 'json', behavior: 'application/json' },
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   css: { file_name: '${column_name}', extension: 'css', behavior: 'text/css' },
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   html: { file_name: '${column_name}', extension: 'html', behavior: 'text/html' },
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   html_template: { file_name: '${column_name}', extension: 'template.html', behavior: 'text/html' },
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   html_script: { file_name: '${column_name}', extension: 'script.html', behavior: 'text/html' },
 };
 

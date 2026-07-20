@@ -157,4 +157,21 @@ describe('SyncService.run', () => {
     expect(withLock).toHaveBeenNthCalledWith(1, '/proj', 'scope_a', expect.any(Function));
     expect(withLock).toHaveBeenNthCalledWith(2, '/proj', 'scope_b', expect.any(Function));
   });
+
+  it('calls push before throwing conflict error (BUG 2)', async () => {
+    const { svc, pushStage, writeStage } = makeDeps({
+      scopes: [{ sysId: 's1', scope: 'my_scope' }],
+    });
+    // Mock write to return conflicted files, but mock push to succeed
+    const mockWrite = vi.mocked(writeStage.apply);
+    const mockPush = vi.mocked(pushStage.push);
+    mockWrite.mockResolvedValue({ conflicted: ['scope/table/rec/f'] });
+    mockPush.mockResolvedValue({ pushed: [], skipped: [] });
+
+    await expect(svc.run({ yes: true })).rejects.toThrow(
+      'The file "scope/table/rec/f" is in conflict',
+    );
+    // Verify push was called before the error was thrown
+    expect(mockPush).toHaveBeenCalledOnce();
+  });
 });

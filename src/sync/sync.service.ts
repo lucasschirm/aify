@@ -158,14 +158,14 @@ export class SyncService {
             forcePull: options.forcePull,
           });
 
+          if (!options.forcePull) {
+            await this.pushStage.push({ snAuth: input.snAuth, changes });
+          }
+
           if (writeResult.conflicted.length > 0) {
             throw new Error(
               `The file "${writeResult.conflicted[0]}" is in conflict. Resolve the conflict or use the "aify sync --force-pull" command to pull the latest valid content for the file.`,
             );
-          }
-
-          if (!options.forcePull) {
-            await this.pushStage.push({ snAuth: input.snAuth, changes });
           }
 
           this.spinner.succeed(`Scope "${input.scope.scope}" synced.`);

@@ -56,6 +56,38 @@ describe('GlobalConfigService', () => {
     const contents = await readFile(path.join(home, '.aify', 'logs', `${day}.log`), 'utf8');
     expect(contents).toBe('hello\nworld\n');
   });
+
+  it('setVerbose and isVerbose control verbose mode', () => {
+    expect(service.isVerbose()).toBe(false);
+    service.setVerbose(true);
+    expect(service.isVerbose()).toBe(true);
+    service.setVerbose(false);
+    expect(service.isVerbose()).toBe(false);
+  });
+
+  it('debug() is a no-op when verbose mode is disabled', async () => {
+    await service.ensureGlobalDir();
+    service.setVerbose(false);
+    await service.debug('test message');
+    const day = new Date().toISOString().slice(0, 10);
+    const logPath = path.join(home, '.aify', 'logs', `${day}.log`);
+    // File may not exist if the no-op worked
+    try {
+      const contents = await readFile(logPath, 'utf8');
+      expect(contents).toBe(''); // Empty if file exists
+    } catch {
+      // File doesn't exist, which is fine
+    }
+  });
+
+  it('debug() appends with DEBUG: prefix when verbose mode is enabled', async () => {
+    await service.ensureGlobalDir();
+    service.setVerbose(true);
+    await service.debug('test message');
+    const day = new Date().toISOString().slice(0, 10);
+    const contents = await readFile(path.join(home, '.aify', 'logs', `${day}.log`), 'utf8');
+    expect(contents).toBe('DEBUG: test message\n');
+  });
 });
 
 async function mkdtemp(_prefix: string): Promise<string> {

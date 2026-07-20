@@ -53,9 +53,11 @@ describe('buildBaseConfig', () => {
     expect(ct.html_script.extension).toBe('script.html');
   });
 
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
   it('file_name is ${column_name} for every column_type (spec C3)', () => {
     const { column_types: ct } = buildBaseConfig(SAMPLE_CSV);
     for (const key of Object.keys(ct)) {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder token substituted at runtime, not a JS template literal
       expect(ct[key].file_name).toBe('${column_name}');
     }
   });

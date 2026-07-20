@@ -87,4 +87,15 @@ describe('ScopeLockService', () => {
     );
     await expect(readFile(join(dir, 'my_scope.lock'), 'utf8')).rejects.toThrow();
   });
+
+  it('treats a corrupt/unreadable lock file as stale and reclaims it', async () => {
+    const dir = join(root, '.aify', 'locks');
+    await mkdir(dir, { recursive: true });
+    // Write non-JSON content to the lock file
+    await writeFile(join(dir, 'my_scope.lock'), 'not valid json {]');
+    // Should succeed because corrupt lock is treated as stale
+    await expect(svc.withLock(root, 'my_scope', async () => 'recovered')).resolves.toBe(
+      'recovered',
+    );
+  });
 });

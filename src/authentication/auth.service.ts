@@ -218,4 +218,24 @@ export class AuthService {
     auth.isCurrent = true;
     return auth.save();
   }
+
+  /**
+   * Update an alias's username and/or keychain password. A username is applied when provided; a
+   * password is written to the keychain only when it is a non-empty string (empty = keep current).
+   * Throws when the alias is unknown.
+   */
+  async update(alias: string, changes: { username?: string; password?: string }): Promise<Auth> {
+    const auth = await Auth.findOne({ where: { alias } });
+    if (!auth) {
+      throw new Error(`Alias "${alias}" not found.`);
+    }
+    if (changes.username !== undefined) {
+      auth.username = changes.username;
+    }
+    const saved = await auth.save();
+    if (changes.password) {
+      await this.credentials.setPassword(alias, changes.password);
+    }
+    return saved;
+  }
 }

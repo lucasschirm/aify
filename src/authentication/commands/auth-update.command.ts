@@ -1,46 +1,57 @@
 /**
  * @file auth-update.command.ts
- * @description `aify auth update` — updates the password for an existing alias by prompting
- * interactively for the new password, then delegates to AuthService.updatePassword.
- *
- * Note: AuthService.updatePassword is a simple wrapper around `credentials.setPassword(alias, newPassword)`.
+ * @description `aify auth update <alias>` — shows the current username (editable, or prefilled
+ * via `--username`) and masked-prompts a password where empty keeps the current one. There is no
+ * `--password` flag (OS-17). Persists via AuthService.update.
  */
 import { CommandRunner, Option, SubCommand } from 'nest-commander';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { AuthService } from '../auth.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
-import { CredentialStore } from '../credential-store.service';
-// biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { PromptService } from '../prompt.service';
 
 interface AuthUpdateOptions {
-  alias?: string;
+  username?: string;
 }
 
-@SubCommand({ name: 'update', description: 'Update your ServiceNow credentials.' })
+@SubCommand({
+  name: 'update',
+  arguments: '<alias>',
+  description: 'Update a connection username and/or password.',
+})
 export class AuthUpdateCommand extends CommandRunner {
   constructor(
-    // Injected for DI metadata; not referenced in this command yet.
-    _authService: AuthService,
-    private readonly credentials: CredentialStore,
+    private readonly authService: AuthService,
     private readonly prompt: PromptService,
   ) {
     super();
   }
 
-  async run(_params: string[], options: AuthUpdateOptions = {}): Promise<void> {
-    const alias = options.alias ?? (await this.prompt.input('Alias:'));
-    const newPassword = await this.prompt.password('New Password:');
+  async run(params: string[], options: AuthUpdateOptions = {}): Promise<void> {
+    const alias = params[0];
+    const all = await this.authService.list();
+    const target = all.find((a) => a.alias === alias);
+    if (!target) {
+      console.error(`Alias "${alias}" not found.`);
+      return;
+    }
 
-    await this.credentials.setPassword(alias, newPassword);
-    console.log(`Credentials for "${alias}" updated.`);
+    const username = options.username ?? (await this.prompt.input('Username:', target.username));
+    const password = await this.prompt.password('Password (leave empty to keep current):');
+
+    const changes: { username?: string; password?: string } = { username };
+    if (password !== '') {
+      changes.password = password;
+    }
+    await this.authService.update(alias, changes);
+    console.log(`Connection "${alias}" updated.`);
   }
 
   @Option({
-    flags: '--alias <alias>',
-    description: 'Connection alias whose credentials to update.',
+    flags: '--username <username>',
+    description: 'New username (prefills the prompt).',
   })
-  parseAlias(value: string): string {
+  parseUsername(value: string): string {
     return value;
   }
 }

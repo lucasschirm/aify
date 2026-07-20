@@ -181,4 +181,22 @@ describe('AuthAddCommand', () => {
     spy.mockRestore();
     process.exitCode = undefined;
   });
+
+  describe('option parsers', () => {
+    it('parseAlias returns the value unchanged', () => {
+      expect(command.parseAlias('a')).toBe('a');
+    });
+
+    it('parseInstanceOption returns the value unchanged', () => {
+      expect(command.parseInstanceOption('i')).toBe('i');
+    });
+
+    it('parseUsername returns the value unchanged', () => {
+      expect(command.parseUsername('u')).toBe('u');
+    });
+
+    it('parseForce returns true', () => {
+      expect(command.parseForce()).toBe(true);
+    });
+  });
 });

@@ -31,64 +31,82 @@ interface Hunk {
 
 /**
  * 3-way merge of `base` (common ancestor), `local` (user edits), and `remote` (incoming).
- * Returns the merged text and whether any conflicts were found. Non-overlapping edits merge
- * cleanly; overlapping edits produce git-style `<<<<<<< HEAD` / `=======` / `>>>>>>> New-HEAD`
- * markers (OS-26).
+ * Returns the merged text and whether any conflicts were found. Edits whose base ranges do not
+ * overlap merge cleanly; edits whose base ranges overlap produce git-style
+ * `<<<<<<< HEAD` / `=======` / `>>>>>>> New-HEAD` markers (OS-26). Never silently merges
+ * overlapping edits.
  */
-function threeWayMerge(
+export function threeWayMerge(
   base: string,
   local: string,
   remote: string,
-): {
-  merged: string;
-  conflict: boolean;
-} {
+): { merged: string; conflict: boolean } {
   const baseLines = base.split('\n');
   const localHunks = structuredPatch('', '', base, local, '', '', { context: 0 }).hunks as Hunk[];
   const remoteHunks = structuredPatch('', '', base, remote, '', '', { context: 0 }).hunks as Hunk[];
 
   const result: string[] = [];
   let conflict = false;
-  let bi = 0; // base line cursor
-
-  // Merge two sorted hunk lists by their base-line range.
+  let bi = 0;
   let li = 0;
   let ri = 0;
+
+  const hunkStart = (h: Hunk): number => h.oldStart - 1;
+  const hunkEnd = (h: Hunk): number => h.oldStart - 1 + h.oldLines;
+
   while (li < localHunks.length || ri < remoteHunks.length) {
     const lh = localHunks[li];
     const rh = remoteHunks[ri];
-    // Pick the hunk that starts earliest in base; if both start at the same
-    // base line, they overlap → conflict region.
-    const lStart = lh ? lh.oldStart - 1 : Infinity;
-    const rStart = rh ? rh.oldStart - 1 : Infinity;
+    const lStart = lh ? hunkStart(lh) : Number.POSITIVE_INFINITY;
+    const lEnd = lh ? hunkEnd(lh) : Number.POSITIVE_INFINITY;
+    const rStart = rh ? hunkStart(rh) : Number.POSITIVE_INFINITY;
+    const rEnd = rh ? hunkEnd(rh) : Number.POSITIVE_INFINITY;
 
-    if (lh && (lStart < rStart || !rh)) {
-      // Local-only hunk — copy base lines before it, then apply local hunk.
+    if (lh && (!rh || lEnd <= rStart)) {
+      // Local hunk lies entirely before the next remote hunk — no overlap.
       copyBase(bi, lStart);
-      applyHunk(lh, 'local');
-      bi = lStart + lh.oldLines;
+      applyAdded(lh);
+      bi = lEnd;
       li++;
-    } else if (rh && (rStart < lStart || !lh)) {
-      // Remote-only hunk — copy base lines before it, then apply remote hunk.
+    } else if (rh && (!lh || rEnd <= lStart)) {
+      // Remote hunk lies entirely before the next local hunk — no overlap.
       copyBase(bi, rStart);
-      applyHunk(rh, 'remote');
-      bi = rStart + rh.oldLines;
+      applyAdded(rh);
+      bi = rEnd;
       ri++;
     } else {
-      // Overlapping hunks at the same base position → conflict.
-      copyBase(bi, lStart);
-      const localBlock = extractAdded(lh);
-      const remoteBlock = extractAdded(rh);
+      // Overlapping base ranges → conflict region. Grow it to swallow every consecutive hunk
+      // (from either side) that touches the region.
+      const regionStart = Math.min(lStart, rStart);
+      let regionEnd = Math.max(lEnd, rEnd);
+      const lRegion: Hunk[] = [];
+      const rRegion: Hunk[] = [];
+      for (;;) {
+        let grew = false;
+        if (li < localHunks.length && hunkStart(localHunks[li]) < regionEnd) {
+          const h = localHunks[li++];
+          lRegion.push(h);
+          regionEnd = Math.max(regionEnd, hunkEnd(h));
+          grew = true;
+        }
+        if (ri < remoteHunks.length && hunkStart(remoteHunks[ri]) < regionEnd) {
+          const h = remoteHunks[ri++];
+          rRegion.push(h);
+          regionEnd = Math.max(regionEnd, hunkEnd(h));
+          grew = true;
+        }
+        if (!grew) break;
+      }
+      copyBase(bi, regionStart);
+      const localBlock = projectRegion(lRegion, regionStart, regionEnd);
+      const remoteBlock = projectRegion(rRegion, regionStart, regionEnd);
       if (localBlock.join('\n') === remoteBlock.join('\n')) {
-        // Same change on both sides — take it once.
         result.push(...localBlock);
       } else {
         conflict = true;
         result.push('<<<<<<< HEAD', ...localBlock, '=======', ...remoteBlock, '>>>>>>> New-HEAD');
       }
-      bi = lStart + Math.max(lh.oldLines, rh.oldLines);
-      li++;
-      ri++;
+      bi = regionEnd;
     }
   }
   copyBase(bi, baseLines.length);
@@ -100,16 +118,24 @@ function threeWayMerge(
     for (let i = from; i < to; i++) result.push(baseLines[i]);
   }
 
-  /** Apply a hunk's additions (skip removed/context lines). */
-  function applyHunk(hunk: Hunk, _side: 'local' | 'remote'): void {
-    for (const line of hunk.lines) {
-      if (line.startsWith('+')) result.push(line.slice(1));
-    }
+  /** Append a hunk's added lines (skip removed/context). */
+  function applyAdded(hunk: Hunk): void {
+    for (const line of hunk.lines) if (line.startsWith('+')) result.push(line.slice(1));
   }
 
-  /** Extract only the added lines from a hunk. */
-  function extractAdded(hunk: Hunk): string[] {
-    return hunk.lines.filter((l) => l.startsWith('+')).map((l) => l.slice(1));
+  /** Reconstruct one side's version of base[rs, re) by applying that side's hunks. */
+  function projectRegion(hunks: Hunk[], rs: number, re: number): string[] {
+    const out: string[] = [];
+    let i = rs;
+    for (const h of hunks) {
+      const hs = hunkStart(h);
+      const he = hunkEnd(h);
+      for (let k = i; k < hs; k++) out.push(baseLines[k]);
+      for (const line of h.lines) if (line.startsWith('+')) out.push(line.slice(1));
+      i = he;
+    }
+    for (let k = i; k < re; k++) out.push(baseLines[k]);
+    return out;
   }
 }
 
