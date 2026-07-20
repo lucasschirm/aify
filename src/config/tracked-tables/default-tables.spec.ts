@@ -1,7 +1,7 @@
 /**
  * @file default-tables.spec.ts
  * Tests for parseTrackedTableList parser and DEFAULT_TABLES (sourced from ../base.json, which
- * is generated from reference_docs/plans/sys_dictionary.csv by scripts/build-base-config.ts).
+ * was generated from reference_docs/plans/sys_dictionary.csv).
  */
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_TABLES, parseTrackedTableList } from './default-tables';
