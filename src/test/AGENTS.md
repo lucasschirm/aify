@@ -40,6 +40,8 @@ Commander writes help via `process.stdout.write` (its configured `writeOut`),
 | File | Purpose |
 |------|---------|
 | `auth.e2e.spec.ts` | E2E for the `aify auth` group — runs `auth` with no subcommand and asserts the help output contains the description and all registered subcommands. |
+| `sync.e2e.spec.ts` | E2E for `aify sync` — real `TableApiClient` against a `nock`-mocked instance; covers pull/push/conflict/pagination/delete/force flags. |
+| `sync.hot.e2e.spec.ts` | E2E for `aify sync --hot` — real chokidar `WatcherService` + real `EventEmitter2`; covers watch→push, poll→pull, self-write suppression, ignored files, scope-limited watching, `--force-pull` poll-only, poll error-resilience, and shutdown. |
 
 ## Notes
 

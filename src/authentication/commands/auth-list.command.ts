@@ -24,7 +24,7 @@ const HEADERS = ['is_current', 'alias', 'instance', 'username', 'last_used'];
 
 /** Render the connection list as a formatted cli-table3 table. Pure — no I/O. */
 export function renderAuthList(rows: AuthListRow[]): string {
-  const table = new Table({ head: HEADERS });
+  const table = new Table({ head: HEADERS, style: { head: [], border: [] } });
   if (rows.length === 0) {
     table.push([{ content: '_no connections_', colSpan: HEADERS.length }]);
     return table.toString();

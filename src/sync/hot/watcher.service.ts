@@ -32,14 +32,23 @@ export class WatcherService {
     this.markWritten(payload.filePath);
   }
 
-  /** Watch `root` (or `root/scope`) and debounce user edits into onChange. */
+  /**
+   * Watch each tracked scope folder (`root/<scope>` for every entry in `scopes` — an empty list
+   * means "no scopes", so nothing is watched) and debounce user edits into onChange. aify's own
+   * metadata/internal files (`record_metadata.json`, `.aify/`, `.aify.config.json`) and noise
+   * (`node_modules`, `.git`, dotfiles) are ignored so a pull-write or config edit never triggers a
+   * push.
+   */
   async watch(
     root: string,
-    scope: string | undefined,
+    scopes: string[],
     onChange: (filePath: string) => Promise<void>,
   ): Promise<void> {
-    const target = scope ? path.join(root, scope) : root;
-    this.watcher = chokidar.watch(target, { ignoreInitial: true });
+    const targets = scopes.map((s) => path.join(root, s));
+    this.watcher = chokidar.watch(targets, {
+      ignoreInitial: true,
+      ignored: (p: string) => this.isIgnored(p),
+    });
     this.watcher.on('change', (filePath: string) => {
       const key = path.resolve(filePath);
       const pending = this.suppressed.get(key);
@@ -50,6 +59,9 @@ export class WatcherService {
       }
       this.debounce(key, () => onChange(key));
     });
+    // Resolve only once chokidar's initial scan is done, so edits made right after startHot()
+    // returns are reliably observed rather than swallowed as part of the initial walk.
+    await new Promise<void>((resolve) => this.watcher?.once('ready', () => resolve()));
   }
 
   /** Close the watcher and clear pending debounce timers. */
@@ -61,6 +73,16 @@ export class WatcherService {
       await this.watcher.close();
       this.watcher = undefined;
     }
+  }
+
+  /** True for aify's own metadata/internal files and noise dirs — never treated as user edits. */
+  private isIgnored(p: string): boolean {
+    const base = path.basename(p);
+    if (base === 'record_metadata.json' || base === '.aify.config.json') return true;
+    const segments = p.split(path.sep);
+    return (
+      segments.includes('.aify') || segments.includes('node_modules') || segments.includes('.git')
+    );
   }
 
   /** Collapse rapid successive changes to one onChange per path. */

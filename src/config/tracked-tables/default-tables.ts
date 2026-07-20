@@ -1,9 +1,8 @@
 /**
  * @file default-tables.ts
  * DEFAULT_TABLES — the shipped default tracked-table set (spec OS-14), sourced from
- * `src/config/base.json`. That JSON is generated once from
- * `reference_docs/plans/sys_dictionary.csv` by `scripts/build-base-config.ts` (run via
- * `pnpm tsx scripts/build-base-config.ts`); one `column_types` entry per distinct CSV
+ * `src/config/base.json`. That JSON was generated once from
+ * `reference_docs/plans/sys_dictionary.csv`; one `column_types` entry per distinct CSV
  * `internal_type` so each script variant (Script, Script (Plain), Script (server side),
  * HTML, HTML Template, HTML Script, …) is tracked individually. This file also exports
  * `parseTrackedTableList()`, which parses the future `tracked_table_list.txt` (||/|-delimited)

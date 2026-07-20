@@ -273,5 +273,6 @@ it('persists the auth row', async () => {
 |------|---------|
 | `auth.e2e.spec.ts` | E2E for the `aify auth` group — runs `auth` with no subcommand and asserts the help output contains the description and all registered subcommands. |
 | `sync.e2e.spec.ts` | E2E for `aify sync` — runs the REAL `TableApiClient` against a `nock`-mocked ServiceNow instance (only `CredentialStore`, `PromptService`, `SpinnerService` are overridden). Covers first-pull create, incremental take-remote, local-edit push, merge conflicts, `Link` pagination, `sys_metadata_delete` deletion, `--force-pull`, `--force-push`, and the empty-scopes error path. |
+| `sync.hot.e2e.spec.ts` | E2E for `aify sync --hot` — drives the real `SyncService` (real chokidar `WatcherService` + real `EventEmitter2`) against a `nock`-mocked instance. Covers watch→push, poll→pull, self-write suppression (OS-22), ignored files (`record_metadata.json`), scope-limited watching, `--force-pull` poll-only, poll error-resilience, and `stopHot()` shutdown (watcher close + SIGINT handler removal). The watch path uses real timers + a `waitFor()` helper; the poll path invokes `pollOnce` deterministically. |
 
 Add new files and their purpose to this table as the suite grows.

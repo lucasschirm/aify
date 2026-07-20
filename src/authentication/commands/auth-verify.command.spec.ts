@@ -96,4 +96,62 @@ describe('AuthVerifyCommand', () => {
     spy.mockRestore();
     process.exitCode = undefined;
   });
+
+  it('reports when getSnAuth throws an AuthError (401)', async () => {
+    const err = new AuthError('Unauthorized');
+    err.status = 401;
+    authService.getSnAuth.mockRejectedValue(err);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await command.run([]);
+
+    expect(spy).toHaveBeenCalledWith('Authentication failed (HTTP 401).');
+    expect(process.exitCode).toBe(1);
+    spy.mockRestore();
+    process.exitCode = undefined;
+  });
+
+  it('reports when getSnAuth throws a ConnectionError with status', async () => {
+    const err = new ConnectionError('Service unavailable', 503);
+    authService.getSnAuth.mockRejectedValue(err);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await command.run([]);
+
+    expect(spy).toHaveBeenCalledWith('Connection failed (HTTP 503): Service unavailable');
+    expect(process.exitCode).toBe(1);
+    spy.mockRestore();
+    process.exitCode = undefined;
+  });
+
+  it('reports when getSnAuth throws a ConnectionError without status', async () => {
+    const err = new ConnectionError('Network unreachable');
+    authService.getSnAuth.mockRejectedValue(err);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await command.run([]);
+
+    expect(spy).toHaveBeenCalledWith('Connection failed: Network unreachable');
+    expect(process.exitCode).toBe(1);
+    spy.mockRestore();
+    process.exitCode = undefined;
+  });
+
+  it('reports when getSnAuth throws a plain Error', async () => {
+    authService.getSnAuth.mockRejectedValue(new Error('nope'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await command.run([]);
+
+    expect(spy).toHaveBeenCalledWith('nope');
+    expect(process.exitCode).toBe(1);
+    spy.mockRestore();
+    process.exitCode = undefined;
+  });
+
+  describe('option parsers', () => {
+    it('parseAlias returns the value unchanged', () => {
+      expect(command.parseAlias('x')).toBe('x');
+    });
+  });
 });

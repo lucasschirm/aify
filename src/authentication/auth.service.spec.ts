@@ -221,4 +221,81 @@ describe('AuthService', () => {
       await expect(service.getSnAuth()).rejects.toThrow(/No password stored in the keychain/);
     });
   });
+
+  it('update() persists a username change', async () => {
+    await service.add(input);
+
+    const updated = await service.update('prod', { username: 'newadmin' });
+
+    expect(updated.username).toBe('newadmin');
+    const reloaded = await Auth.findOne({ where: { alias: 'prod' } });
+    expect(reloaded?.username).toBe('newadmin');
+  });
+
+  it('update() throws for an unknown alias', async () => {
+    await expect(service.update('ghost', { username: 'x' })).rejects.toThrow(/not found/);
+  });
+
+  it('update() with an empty password does not touch the keychain', async () => {
+    await service.add(input);
+    credentials.setPassword.mockClear();
+
+    await service.update('prod', { username: 'admin', password: '' });
+
+    expect(credentials.setPassword).not.toHaveBeenCalled();
+  });
+
+  it('update() with a new password writes it to the keychain', async () => {
+    await service.add(input);
+    credentials.setPassword.mockClear();
+
+    await service.update('prod', { password: 'rotated' });
+
+    expect(credentials.setPassword).toHaveBeenCalledWith('prod', 'rotated');
+  });
+
+  describe('getSnAuth remaining branches', () => {
+    it('throws when the Instance row is missing for an alias', async () => {
+      await service.add(input);
+      // Disable foreign key constraints temporarily and set instanceId to a non-existent value
+      await sequelize.query('PRAGMA foreign_keys = OFF');
+      try {
+        const auth = await Auth.findOne({ where: { alias: 'prod' } });
+        if (auth) {
+          auth.instanceId = 99999;
+          await auth.save();
+        }
+
+        await expect(service.getSnAuth('prod')).rejects.toThrow(
+          /Instance row for alias .* is missing/,
+        );
+      } finally {
+        await sequelize.query('PRAGMA foreign_keys = ON');
+      }
+    });
+  });
+
+  describe('setCurrent', () => {
+    it('throws when the alias is not found', async () => {
+      await expect(service.setCurrent('ghost')).rejects.toThrow(/not found/);
+    });
+
+    it('promotes an alias to the current connection', async () => {
+      await service.add(input);
+      // Create a second alias
+      await service.add({ ...input, alias: 'dev' });
+      // At this point 'dev' should be current
+      const current = await Auth.findOne({ where: { isCurrent: true } });
+      expect(current?.alias).toBe('dev');
+
+      // Now set 'prod' as current
+      const result = await service.setCurrent('prod');
+
+      expect(result.isCurrent).toBe(true);
+      expect(result.alias).toBe('prod');
+      // Verify that 'prod' is now the only current one
+      const updatedCurrent = await Auth.findOne({ where: { isCurrent: true } });
+      expect(updatedCurrent?.alias).toBe('prod');
+    });
+  });
 });

@@ -6,8 +6,7 @@ Which ServiceNow tables/columns aify tracks, and how their configuration is laye
 - `tracked-tables.types.ts` — `TrackedColumn`, `TrackedTable`, `ColumnType`, `TrackConfig`.
 - `default-tables.ts` — `DEFAULT_TABLES` (the shipped default tracked-table set, spec OS-14),
   imported from `../base.json` (generated once from
-  `reference_docs/plans/sys_dictionary.csv` by `scripts/build-base-config.ts` — see
-  `scripts/AGENTS.md`). Also exports `parseTrackedTableList(content)` for the future
+  `reference_docs/plans/sys_dictionary.csv`). Also exports `parseTrackedTableList(content)` for the future
   `tracked_table_list.txt` (rows split by `||`, fields by `|` as `table|column|type`; strips a
   trailing sys_id from the table via `split('_')` → drop last → `join('_')`).
 - `tracked-tables.service.ts` — `TrackedTablesService.getProjectTrackTables(projectRoot)`.

@@ -58,4 +58,25 @@ describe('SpinnerService', () => {
     service.start('loading');
     service.text('still loading');
   });
+
+  it('info stops the spinner with an info marker', () => {
+    service.start('loading');
+    service.info('info message');
+  });
+
+  it('info is safe to call when no spinner is active', () => {
+    service.info(); // should not throw
+  });
+
+  it('succeed is safe to call when no spinner is active', () => {
+    service.succeed(); // should not throw
+  });
+
+  it('fail is safe to call when no spinner is active', () => {
+    service.fail(); // should not throw
+  });
+
+  it('text is safe to call when no spinner is active', () => {
+    service.text('some text'); // should not throw
+  });
 });

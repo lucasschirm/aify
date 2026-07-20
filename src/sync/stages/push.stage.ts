@@ -62,6 +62,7 @@ export class PushStage {
       const pushedColumns: { column: string; content: string }[] = [];
       for (const c of changes) {
         if (meta.$conflicts[c.column] === true) continue; // never push a conflicted column
+        if (meta.$hash[c.column] === undefined) continue; // never PATCH an untracked field
         const content = await readFile(c.filePath, 'utf8');
         body[c.column] = content;
         pushedColumns.push({ column: c.column, content });

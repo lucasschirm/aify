@@ -64,8 +64,8 @@
     "xxhash-addon": "^2.1.0"
   },
   "lint-staged": {
-    "*.{ts,js,json,md}": "biome format --write",
-    "*.{ts,js}": "biome lint --write"
+    "*.{ts,js,json}": "biome format --write --no-errors-on-unmatched",
+    "*.{ts,js}": "biome lint --write --no-errors-on-unmatched"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",

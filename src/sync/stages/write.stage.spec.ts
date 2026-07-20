@@ -13,7 +13,7 @@ import { RecordMetadataService } from '../../record-metadata/record-metadata.ser
 import type { RecordMetadata } from '../../record-metadata/record-metadata.types';
 import { AIFY_FILE_WRITTEN } from '../hot/hot-events';
 import type { ColumnChange } from '../sync.types';
-import { hasConflictMarkers, isConflictResolved, WriteStage } from './write.stage';
+import { hasConflictMarkers, isConflictResolved, threeWayMerge, WriteStage } from './write.stage';
 
 function change(
   folder: string,
@@ -205,6 +205,88 @@ describe('WriteStage.apply', () => {
     expect(emit).toHaveBeenCalledWith(AIFY_FILE_WRITTEN, {
       filePath: join(folder, 'script.glide.js'),
     });
+  });
+
+  it('merge (overlapping conflict): writes markers, sets $conflicts, detects overlapping edits', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const base = 'a\nb\nc\nd\ne';
+    const local = 'a\nX\nd\ne'; // replaces b,c
+    const remote = 'a\nb\nY\ne'; // replaces c,d
+    const folder = await seed(root, base, local);
+    const stage = newStage();
+    const res = await stage.apply({
+      root,
+      changes: [
+        change(folder, {
+          klass: 'merge',
+          localChanged: true,
+          remoteChanged: true,
+          base,
+          local,
+          remote,
+        }),
+      ],
+    });
+    const body = await readFile(join(folder, 'script.glide.js'), 'utf8');
+    expect(hasConflictMarkers(body)).toBe(true);
+    expect(body).toContain('<<<<<<< HEAD');
+    expect(body).toContain('>>>>>>> New-HEAD');
+    expect(res.conflicted).toEqual(['my_scope/sys_script/rec/script.glide.js']);
+    const meta = await new RecordMetadataService().read(folder);
+    expect(meta?.$conflicts.script).toBe(true);
+    log.mockRestore();
+  });
+});
+
+describe('threeWayMerge', () => {
+  it('non-overlapping edits merge cleanly', () => {
+    const base = 'a\nb\nc';
+    const local = 'X\nb\nc';
+    const remote = 'a\nb\nZ';
+    const { merged, conflict } = threeWayMerge(base, local, remote);
+    expect(conflict).toBe(false);
+    expect(merged).toBe('X\nb\nZ');
+  });
+
+  it('overlapping edits conflict (reproduction 1: replaces)', () => {
+    const base = 'a\nb\nc\nd\ne';
+    const local = 'a\nX\nd\ne'; // replaces b,c
+    const remote = 'a\nb\nY\ne'; // replaces c,d
+    const { merged, conflict } = threeWayMerge(base, local, remote);
+    expect(conflict).toBe(true);
+    expect(merged).toContain('<<<<<<< HEAD');
+    expect(merged).toContain('>>>>>>> New-HEAD');
+    // Should NOT produce the silently-corrupted merge
+    expect(merged).not.toBe('a\nX\nY\ne');
+  });
+
+  it('overlapping edits conflict (reproduction 2: deletions)', () => {
+    const base = '1\n2\n3\n4\n5';
+    const local = '1\n5'; // deletes 2,3,4
+    const remote = '1\n2\n3x\n4\n5'; // edits 3
+    const { merged, conflict } = threeWayMerge(base, local, remote);
+    expect(conflict).toBe(true);
+    expect(merged).toContain('<<<<<<< HEAD');
+    expect(merged).toContain('>>>>>>> New-HEAD');
+  });
+
+  it('identical change on both sides is taken once, no conflict', () => {
+    const base = 'a\nb\nc';
+    const local = 'a\nQ\nc';
+    const remote = 'a\nQ\nc';
+    const { merged, conflict } = threeWayMerge(base, local, remote);
+    expect(conflict).toBe(false);
+    expect(merged).toBe('a\nQ\nc');
+  });
+
+  it('coincident full-line replacement still conflicts', () => {
+    const base = 'shared';
+    const local = 'local-change';
+    const remote = 'remote-change';
+    const { merged, conflict } = threeWayMerge(base, local, remote);
+    expect(conflict).toBe(true);
+    expect(merged).toContain('<<<<<<< HEAD');
+    expect(merged).toContain('>>>>>>> New-HEAD');
   });
 });
 

@@ -7,8 +7,8 @@
  */
 
 import { readdir, readFile } from 'node:fs/promises';
-import { basename, dirname, join } from 'node:path';
-import { Injectable } from '@nestjs/common';
+import { basename, dirname, join, relative, sep } from 'node:path';
+import { Injectable, Logger } from '@nestjs/common';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
 import { AuthService } from '../authentication/auth.service';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
@@ -42,7 +42,10 @@ const MUTEX = '--force-pull and --force-push are mutually exclusive';
 
 @Injectable()
 export class SyncService {
+  private readonly logger = new Logger(SyncService.name);
   private hotInterval?: NodeJS.Timeout;
+  private sigintHandler?: () => void;
+  private polling = false;
 
   constructor(
     private readonly projectConfig: ProjectConfigService,
@@ -155,14 +158,14 @@ export class SyncService {
             forcePull: options.forcePull,
           });
 
+          if (!options.forcePull) {
+            await this.pushStage.push({ snAuth: input.snAuth, changes });
+          }
+
           if (writeResult.conflicted.length > 0) {
             throw new Error(
               `The file "${writeResult.conflicted[0]}" is in conflict. Resolve the conflict or use the "aify sync --force-pull" command to pull the latest valid content for the file.`,
             );
-          }
-
-          if (!options.forcePull) {
-            await this.pushStage.push({ snAuth: input.snAuth, changes });
           }
 
           this.spinner.succeed(`Scope "${input.scope.scope}" synced.`);
@@ -236,29 +239,60 @@ export class SyncService {
     const config = await this.projectConfig.read(root);
     const intervalMs = (config.hot?.pullInterval ?? 10) * 1000;
 
+    let scopeNames = (config.project?.scopes ?? []).map((s) => s.scope);
+    if (options.scope) scopeNames = scopeNames.filter((s) => s === options.scope);
+
+    // --force-pull is poll-only (discard local edits) — do not watch files (initial_plan.md line 265).
     if (!options.forcePull) {
-      await this.watcher.watch(root, options.scope, (p) => this.pushFile(p, options));
+      await this.watcher.watch(root, scopeNames, (p) => this.pushFile(p, options));
     }
 
     this.hotInterval = setInterval(() => {
       void this.pollOnce(options);
     }, intervalMs);
+
+    // Clean shutdown so chokidar releases its handles and the poll timer stops on Ctrl+C.
+    this.sigintHandler = () => {
+      void this.stopHot().then(() => process.exit(0));
+    };
+    process.once('SIGINT', this.sigintHandler);
+
+    const label = scopeNames.length ? scopeNames.join(', ') : 'project';
+    this.logger.log(`Watching ${label} for changes — press Ctrl+C to stop.`);
   }
 
-  /** One lightweight sys_metadata request per tracked scope; run the full pipeline only on a change (OS-13). */
+  /**
+   * One lightweight sys_metadata request per tracked scope; run the full pipeline only on a change
+   * (OS-13). Errors (transient network failures, a conflict thrown mid-sync) are logged and
+   * swallowed so the long-running hot loop survives; a reentrancy guard prevents a slow poll from
+   * overlapping the next interval tick.
+   */
   private async pollOnce(options: SyncOptions): Promise<boolean> {
-    for (const input of await this.pullInputs(options)) {
-      const changed = await this.pullStage.detectChanges(input);
-      if (changed.length > 0) {
-        await this.syncOnce(options);
-        return true;
+    if (this.polling) return false;
+    this.polling = true;
+    try {
+      for (const input of await this.pullInputs(options)) {
+        const changed = await this.pullStage.detectChanges(input);
+        if (changed.length > 0) {
+          await this.syncOnce(options);
+          return true;
+        }
       }
+      return false;
+    } catch (err) {
+      this.logger.warn(`Hot poll failed: ${(err as Error).message}`);
+      return false;
+    } finally {
+      this.polling = false;
     }
-    return false;
   }
 
-  /** Stop the poll interval and close the watcher (shutdown / SIGINT / tests). */
+  /** Stop the poll interval, remove the SIGINT handler, and close the watcher (shutdown / tests). */
   async stopHot(): Promise<void> {
+    if (this.sigintHandler) {
+      process.removeListener('SIGINT', this.sigintHandler);
+      this.sigintHandler = undefined;
+    }
     if (this.hotInterval) {
       clearInterval(this.hotInterval);
       this.hotInterval = undefined;
@@ -285,31 +319,48 @@ export class SyncService {
     return inputs;
   }
 
-  /** Push a single file that changed on disk (hot-mode callback). */
+  /**
+   * Push a single file that changed on disk (hot-mode watcher callback). Skips files that aren't a
+   * tracked column (guards against `record_metadata.json` and stray files, mirroring
+   * `forcePushOnce`), runs under the per-scope lock so it can't race a concurrent poll-driven
+   * `syncOnce` (OS-8), and never throws back into the watcher.
+   */
   private async pushFile(filePath: string, _options: SyncOptions): Promise<void> {
-    const current = await this.auth.current();
-    if (!current) return;
-    const folder = dirname(filePath);
-    const meta = await this.records.read(folder);
-    if (!meta?.$sys_id) return;
+    try {
+      const current = await this.auth.current();
+      if (!current) return;
+      const folder = dirname(filePath);
+      const meta = await this.records.read(folder);
+      if (!meta?.$sys_id) return;
 
-    const baseName = basename(filePath);
-    const column = baseName.replace(/\.[^.]+$/, '');
-    const content = await readFile(filePath, 'utf8').catch(() => '');
-    const change: ColumnChange = {
-      sysId: meta.$sys_id,
-      table: meta.$table,
-      column,
-      localChanged: true,
-      remoteChanged: false,
-      klass: 'keep-local',
-      base: (meta[column] as string | undefined) ?? '',
-      local: content,
-      remote: '',
-      folder,
-      filePath,
-    };
-    await this.pushStage.push({ snAuth: current.snAuth, changes: [change] });
+      const baseName = basename(filePath);
+      const column = baseName.replace(/\.[^.]+$/, '');
+      if (meta.$hash[column] === undefined) return; // not a tracked column
+
+      const root = await this.projectConfig.ensureProjectRoot();
+      const scope = relative(root, filePath).split(sep)[0];
+      if (!scope || scope.startsWith('..')) return; // outside the project
+
+      const content = await readFile(filePath, 'utf8').catch(() => '');
+      const change: ColumnChange = {
+        sysId: meta.$sys_id,
+        table: meta.$table,
+        column,
+        localChanged: true,
+        remoteChanged: false,
+        klass: 'keep-local',
+        base: (meta[column] as string | undefined) ?? '',
+        local: content,
+        remote: '',
+        folder,
+        filePath,
+      };
+      await this.lock.withLock(root, scope, async () => {
+        await this.pushStage.push({ snAuth: current.snAuth, changes: [change] });
+      });
+    } catch (err) {
+      this.logger.warn(`Hot push of "${filePath}" failed: ${(err as Error).message}`);
+    }
   }
 
   /** Latest `$sys_updated_on` in a scope's records, or undefined when the scope has no records. */

@@ -39,13 +39,17 @@ export class AppInitCommand extends CommandRunner {
     }
 
     const projectRoot = await this.projectConfig.ensureProjectRoot();
-    const app = await this.appService.init(param, projectRoot);
-    console.log(`Application "${app.displayValue}" (${app.scope}) tracked.`);
+    try {
+      const app = await this.appService.init(param, projectRoot);
+      console.log(`Application "${app.displayValue}" (${app.scope}) tracked.`);
 
-    if (options.yes) return;
-    const shouldSync = await this.prompt.confirm('Run a sync now?');
-    if (shouldSync) {
-      console.log('Run `aify sync` to pull metadata.');
+      if (options.yes) return;
+      const shouldSync = await this.prompt.confirm('Run a sync now?');
+      if (shouldSync) {
+        console.log('Run `aify sync` to pull metadata.');
+      }
+    } catch (err) {
+      console.error((err as Error).message);
     }
   }
 
