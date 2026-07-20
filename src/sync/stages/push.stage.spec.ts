@@ -106,6 +106,21 @@ describe('PushStage.push', () => {
     expect(meta?.$sys_mod_count).toBe(5);
   });
 
+  it('skips a column that is not tracked in $hash (never PATCHes a stray field)', async () => {
+    const folder = await seed(root, 'rec1');
+    const patch = nock(BASE).patch(/.*/).reply(200, PATCH_RESPONSE);
+
+    // `record_metadata` is not a tracked column — it must never be sent to the instance.
+    const res = await newStage().push({
+      snAuth: SNAUTH,
+      changes: [change(folder, 'record_metadata')],
+    });
+
+    expect(res.pushed).toHaveLength(0);
+    expect(patch.isDone()).toBe(false);
+    nock.cleanAll();
+  });
+
   it('skips a record with no $sys_id and warns (never PATCHes)', async () => {
     const folder = await seed(root, '');
     const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
