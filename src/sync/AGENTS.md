@@ -24,14 +24,15 @@ git-like pull → conflict-check → write → push flow (spec "Step 1–4").
   nock for pull; temp dirs for write).
 
 ## Notes
-- The pull queries every tracked table directly by `sys_scope` (one request per table per scope),
-  optionally filtered by `sys_updated_on>` on incremental pulls, and compares the returned rows
-  with local metadata to decide created/changed/unchanged. This finds all application records,
-  including base records that may not appear in `sys_metadata`. Tables that do not exist or are
-  inaccessible on the instance (HTTP 400/404) are skipped rather than aborting the whole sync;
-  authentication failures (401) and transient/server errors still fail the scope. Deletions are
-  still detected via `sys_metadata_delete`; the 1800-char URL split (OS-25) is no longer needed
-  because each table is fetched in a single paginated request.
+- The pull queries every tracked table directly by `sys_scope` (one request per table per scope).
+  Each table has its own incremental watermark derived from the maximum local `$sys_updated_on` for
+  that table, so a newly tracked table with no local records is fully seeded on its first sync.
+  Returned rows are compared with local metadata to decide created/changed/unchanged. This finds all
+  application records, including base records that may not appear in `sys_metadata`.
+- Tables that do not exist or are inaccessible on the instance (any 4xx other than 401) are skipped
+  rather than aborting the whole sync; authentication failures (401) and transient/server errors
+  still fail the scope. Deletions are still detected via `sys_metadata_delete`; the 1800-char URL
+  split (OS-25) is no longer needed because each table is fetched in a single paginated request.
 - The write stage implements the `--force-pull` path: overwrite all columns from the instance,
   refresh `$hash`/`$sys_updated_on`/`$sys_mod_count`, clear `$conflicts`. 3-way merge and
   conflict-check are deferred.

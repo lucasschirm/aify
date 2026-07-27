@@ -28,7 +28,10 @@ export interface PullInput {
   scope: { sysId: string; scope: string };
   snAuth: SnAuth;
   trackConfig: TrackConfig;
-  /** Scope's last sync timestamp ("YYYY-MM-DD HH:MM:SS"); undefined ⇒ first pull (omit date). */
+  /**
+   * Scope-wide incremental watermark used by `detectChanges`. `run` derives a per-table
+   * watermark from local metadata so newly tracked tables are fully seeded.
+   */
   lastUpdated?: string;
 }
 
@@ -73,11 +76,22 @@ export class PullStage {
   async run(input: PullInput): Promise<PullResult> {
     const { root, scope, snAuth, trackConfig, lastUpdated } = input;
     const map = await this.records.loadScopeMap(root, scope.scope);
-    const dateClause = lastUpdated ? `^sys_updated_on>${dateGenerate(lastUpdated)}` : '';
+
+    // Compute per-table incremental watermark from local metadata so a newly
+    // tracked table (with no local records) gets a full pull on its first sync.
+    const tableLastUpdated = new Map<string, string>();
+    for (const { meta } of map.values()) {
+      const current = tableLastUpdated.get(meta.$table);
+      if (!current || meta.$sys_updated_on > current) {
+        tableLastUpdated.set(meta.$table, meta.$sys_updated_on);
+      }
+    }
 
     const result: PullResult = { changed: [], created: [], deleted: [] };
 
     for (const table of trackConfig.tables) {
+      const tableWatermark = tableLastUpdated.get(table.name);
+      const dateClause = tableWatermark ? `^sys_updated_on>${dateGenerate(tableWatermark)}` : '';
       const columns = table.columns;
       const fields = [
         ...columns.map((c) => c.name),

@@ -239,4 +239,61 @@ describe('PullStage.run — changed records', () => {
       newStage().run({ root, scope: SCOPE, snAuth: SNAUTH, trackConfig: TRACK }),
     ).rejects.toThrow('Failed to pull table sys_script for scope my_scope');
   });
+
+  it('fully pulls a newly tracked table even when other tables have a later watermark', async () => {
+    // Seed an existing table with a recent update so the scope watermark is high.
+    nock(BASE)
+      .get('/api/now/v2/table/sys_script')
+      .query(() => true)
+      .reply(200, { result: SCRIPT_PAGE_1 });
+    await newStage().run({ root, scope: SCOPE, snAuth: SNAUTH, trackConfig: TRACK });
+
+    // Now add a second table. It has no local records, so it must be pulled without a date filter
+    // even though sys_script already has a later sys_updated_on.
+    const secondTable = {
+      tables: [
+        { name: 'sys_script', columns: [{ name: 'script', type: 'glidescript' }] },
+        { name: 'sys_new_table', columns: [{ name: 'script', type: 'glidescript' }] },
+      ],
+      column_types: {
+        glidescript: { file_name: 'script', extension: 'glide.js', behavior: 'glidescript' },
+      },
+    };
+    const newRecords = [
+      {
+        sys_id: 'rec00000000000000000000000000003',
+        sys_class_name: 'sys_new_table',
+        sys_name: 'Gamma Rule',
+        script: "gs.info('gamma v1');",
+        sys_updated_on: '2026-07-09 12:00:00', // older than the existing sys_script record
+        sys_mod_count: '1',
+      },
+    ];
+
+    nock.cleanAll();
+    nock(BASE)
+      .get('/api/now/v2/table/sys_script')
+      .query(() => true)
+      .reply(200, { result: [] })
+      .get('/api/now/v2/table/sys_new_table')
+      .query((q) => {
+        const query = q.sysparm_query as string;
+        return query === `sys_scope=${SCOPE.sysId}`;
+      })
+      .reply(200, { result: newRecords })
+      .get('/api/now/v2/table/sys_metadata_delete')
+      .query(() => true)
+      .reply(200, { result: [] });
+
+    const result = await newStage().run({
+      root,
+      scope: SCOPE,
+      snAuth: SNAUTH,
+      trackConfig: secondTable,
+      lastUpdated: '2026-07-10 12:00:00',
+    });
+
+    expect(result.created).toHaveLength(1);
+    expect(result.created[0]).toMatch(/gamma-rule/);
+  });
 });
