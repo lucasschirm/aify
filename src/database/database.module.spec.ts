@@ -29,7 +29,7 @@ describe('DatabaseModule', () => {
     }).compile();
     const sequelize = moduleRef.get(Sequelize);
     sequelize.addModels([Probe]);
-    await moduleRef.init(); // triggers onModuleInit -> sequelize.sync() (create-missing only)
+    await moduleRef.init(); // triggers MigrationRunner.onModuleInit -> sequelize.sync() + migrations (create-missing only)
     const tables = await sequelize.getQueryInterface().showAllTables();
     expect(tables).toContain('probes');
     await moduleRef.close();
