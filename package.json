@@ -43,6 +43,7 @@
     "format": "biome format --write .",
     "verify": "pnpm lint && pnpm test && pnpm test:e2e",
     "prepublishOnly": "pnpm build && pnpm test",
+    "version:patch": "npm version patch",
     "prepare": "husky"
   },
   "dependencies": {

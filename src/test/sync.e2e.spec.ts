@@ -28,6 +28,7 @@ import { CredentialStore } from '../authentication/credential-store.service';
 import { PromptService } from '../authentication/prompt.service';
 import { hashContent } from '../common/hashing/content-hash';
 import { slugifyDisplayValue } from '../common/normalization/slugify';
+import { TrackedTablesService } from '../config/tracked-tables/tracked-tables.service';
 import { DatabaseModule } from '../database/database.module';
 import { Auth } from '../database/models/auth.model';
 import { Instance } from '../database/models/instance.model';
@@ -47,6 +48,11 @@ const SCOPE = 'x_test_app';
 const SCOPE_SYS_ID = 'scope000000000000000000000000001';
 const TABLE = 'x_widget';
 
+const TRACK_CONFIG = {
+  tables: [{ name: TABLE, columns: [{ name: 'source', type: 'js' }] }],
+  column_types: { js: { file_name: 'source', extension: 'js', behavior: 'text' } },
+};
+
 const SYS_ID_1 = 'rec00000000000000000000000000001';
 const SYS_ID_2 = 'rec00000000000000000000000000002';
 
@@ -59,8 +65,9 @@ function projectConfigFixture(scopes: { sysId: string; scope: string }[]) {
 }
 
 /**
- * Nock query predicate for incremental `sys_updated_on>` filters. Requires the raw UTC
- * timestamp literal and rejects a `javascript:gs.dateGenerate(...)` wrapper.
+ * Nock query predicate for incremental `sys_updated_on>` filters on tracked table pulls.
+ * Requires the raw UTC timestamp literal and rejects a `javascript:gs.dateGenerate(...)`
+ * wrapper.
  *
  * Regression guard: ServiceNow's `gs.dateGenerate()` interprets its arguments in the
  * calling user's SESSION time zone and converts to UTC, but the `sys_updated_on` value we
@@ -191,6 +198,11 @@ describe('sync command (E2E)', () => {
       .useValue(prompt as unknown as PromptService)
       .overrideProvider(SpinnerService)
       .useValue(spinner as unknown as SpinnerService)
+      .overrideProvider(TrackedTablesService)
+      .useValue({
+        getProjectTrackTables: vi.fn().mockResolvedValue(TRACK_CONFIG),
+        getColumnSources: vi.fn().mockResolvedValue(new Map()),
+      } as unknown as TrackedTablesService)
       .compile();
 
     // Initialize now (rather than letting CommandTestFactory.run do it) so DatabaseModule's
@@ -225,25 +237,13 @@ describe('sync command (E2E)', () => {
 
   it('first pull creates a new record folder with the remote content', async () => {
     const scope = nock(BASE_URL, { reqheaders: { authorization: BASIC_AUTH } })
-      .get('/api/now/v2/table/sys_metadata')
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-01 10:00:00',
-            sys_mod_count: '1',
-            sys_name: 'Hello Widget',
-          },
-        ],
-      })
       .get(`/api/now/v2/table/${TABLE}`)
       .query(true)
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
+            sys_name: 'Hello Widget',
             source: 'console.log("v1");',
             sys_updated_on: '2026-07-01 10:00:00',
             sys_mod_count: '1',
@@ -271,25 +271,13 @@ describe('sync command (E2E)', () => {
     });
 
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-02 09:00:00',
-            sys_mod_count: '2',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: 'console.log("v2");',
             sys_updated_on: '2026-07-02 09:00:00',
             sys_mod_count: '2',
@@ -320,7 +308,7 @@ describe('sync command (E2E)', () => {
     await writeFile(join(folder, 'source.js'), 'console.log("edited-locally");', 'utf8');
 
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, { result: [] })
       .get('/api/now/v2/table/sys_metadata_delete')
@@ -361,25 +349,13 @@ describe('sync command (E2E)', () => {
     await writeFile(join(folder, 'source.js'), 'line1\nLOCAL_EDIT\nline3', 'utf8');
 
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-04 08:00:00',
-            sys_mod_count: '2',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: 'line1\nREMOTE_EDIT\nline3',
             sys_updated_on: '2026-07-04 08:00:00',
             sys_mod_count: '2',
@@ -428,25 +404,13 @@ describe('sync command (E2E)', () => {
     // The remote row is still returned (its sys_updated_on post-dates our stored one) but its
     // content is unchanged since the conflict → classified keep-local → the resolution is pushed.
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-04 08:00:00',
-            sys_mod_count: '2',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: REMOTE_AT_CONFLICT,
             sys_updated_on: '2026-07-04 08:00:00',
             sys_mod_count: '2',
@@ -496,25 +460,13 @@ describe('sync command (E2E)', () => {
     });
 
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-08 09:00:00',
-            sys_mod_count: '3',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: newerRemote,
             sys_updated_on: '2026-07-08 09:00:00',
             sys_mod_count: '3',
@@ -563,25 +515,13 @@ describe('sync command (E2E)', () => {
     });
 
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-08 09:00:00',
-            sys_mod_count: '3',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: newerRemote,
             sys_updated_on: '2026-07-08 09:00:00',
             sys_mod_count: '3',
@@ -639,25 +579,13 @@ describe('sync command (E2E)', () => {
 
     // Sync #1 — both sides edited line2 → conflict markers written, sync aborts.
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-04 08:00:00',
-            sys_mod_count: '2',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: REMOTE_AT_CONFLICT,
             sys_updated_on: '2026-07-04 08:00:00',
             sys_mod_count: '2',
@@ -678,25 +606,13 @@ describe('sync command (E2E)', () => {
 
     // Sync #2 — resolution is pushed to the instance (remote unchanged since the conflict).
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-04 08:00:00',
-            sys_mod_count: '2',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: REMOTE_AT_CONFLICT,
             sys_updated_on: '2026-07-04 08:00:00',
             sys_mod_count: '2',
@@ -726,10 +642,10 @@ describe('sync command (E2E)', () => {
     expect(meta.$hash.source).toBe(hashContent(resolved));
   });
 
-  it('follows Link rel="next" pagination across sys_metadata pages', async () => {
-    const nextUrl = `${BASE_URL}/api/now/v2/table/sys_metadata?sysparm_offset=1`;
+  it('follows Link rel="next" pagination across tracked table pages', async () => {
+    const nextUrl = `${BASE_URL}/api/now/v2/table/${TABLE}?sysparm_offset=1`;
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(true)
       .reply(
         200,
@@ -737,40 +653,22 @@ describe('sync command (E2E)', () => {
           result: [
             {
               sys_id: SYS_ID_1,
-              sys_class_name: TABLE,
+              sys_name: 'Widget Alpha',
+              source: 'console.log("alpha");',
               sys_updated_on: '2026-07-01 10:00:00',
               sys_mod_count: '1',
-              sys_name: 'Widget Alpha',
             },
           ],
         },
         { link: `<${nextUrl}>;rel="next"` },
       )
-      .get('/api/now/v2/table/sys_metadata')
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_2,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-01 11:00:00',
-            sys_mod_count: '1',
-            sys_name: 'Widget Beta',
-          },
-        ],
-      })
       .get(`/api/now/v2/table/${TABLE}`)
       .query(true)
       .reply(200, {
         result: [
           {
-            sys_id: SYS_ID_1,
-            source: 'console.log("alpha");',
-            sys_updated_on: '2026-07-01 10:00:00',
-            sys_mod_count: '1',
-          },
-          {
             sys_id: SYS_ID_2,
+            sys_name: 'Widget Beta',
             source: 'console.log("beta");',
             sys_updated_on: '2026-07-01 11:00:00',
             sys_mod_count: '1',
@@ -797,7 +695,7 @@ describe('sync command (E2E)', () => {
     });
 
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, { result: [] })
       .get('/api/now/v2/table/sys_metadata_delete')
@@ -824,25 +722,13 @@ describe('sync command (E2E)', () => {
     await writeFile(join(folder, 'source.js'), 'console.log("local-edit-to-discard");', 'utf8');
 
     nock(BASE_URL)
-      .get('/api/now/v2/table/sys_metadata')
+      .get(`/api/now/v2/table/${TABLE}`)
       .query(requireRawUtcDateFilter('2026-07-01 10:00:00'))
       .reply(200, {
         result: [
           {
             sys_id: SYS_ID_1,
-            sys_class_name: TABLE,
-            sys_updated_on: '2026-07-06 10:00:00',
-            sys_mod_count: '2',
             sys_name: 'Hello Widget',
-          },
-        ],
-      })
-      .get(`/api/now/v2/table/${TABLE}`)
-      .query(true)
-      .reply(200, {
-        result: [
-          {
-            sys_id: SYS_ID_1,
             source: 'console.log("from-instance");',
             sys_updated_on: '2026-07-06 10:00:00',
             sys_mod_count: '2',
