@@ -1,6 +1,6 @@
 {
   "name": "@lucasschirm/aify",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A tiny cli command to get ServiceNow records locally with merge/conflict structure.",
   "keywords": [
     "servicenow",
