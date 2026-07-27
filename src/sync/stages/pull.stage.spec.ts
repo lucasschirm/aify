@@ -203,4 +203,40 @@ describe('PullStage.run — changed records', () => {
     expect(result.created).toHaveLength(1);
     expect(result.changed).toHaveLength(0);
   });
+
+  it('skips missing or inaccessible tables and continues pulling the others', async () => {
+    const track = {
+      tables: [
+        { name: 'sys_script', columns: [{ name: 'script', type: 'glidescript' }] },
+        { name: 'sys_missing', columns: [{ name: 'script', type: 'glidescript' }] },
+      ],
+      column_types: {
+        glidescript: { file_name: 'script', extension: 'glide.js', behavior: 'glidescript' },
+      },
+    };
+
+    nock(BASE)
+      .get('/api/now/v2/table/sys_script')
+      .query(() => true)
+      .reply(200, { result: SCRIPT_PAGE_1 })
+      .get('/api/now/v2/table/sys_missing')
+      .query(() => true)
+      .reply(400, { error: { message: 'Table not found' } });
+
+    const result = await newStage().run({ root, scope: SCOPE, snAuth: SNAUTH, trackConfig: track });
+
+    expect(result.created).toHaveLength(1);
+    expect(result.changed).toHaveLength(0);
+  });
+
+  it('still fails on authentication errors during table pull', async () => {
+    nock(BASE)
+      .get('/api/now/v2/table/sys_script')
+      .query(() => true)
+      .reply(401, { error: { message: 'Unauthorized' } });
+
+    await expect(
+      newStage().run({ root, scope: SCOPE, snAuth: SNAUTH, trackConfig: TRACK }),
+    ).rejects.toThrow('Failed to pull table sys_script for scope my_scope');
+  });
 });

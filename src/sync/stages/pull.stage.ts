@@ -12,7 +12,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { dateGenerate } from '../../api/encoded-query.builder';
 import type { SnAuth, SnRecord } from '../../api/table-api.client';
 // biome-ignore lint/style/useImportType: required for NestJS DI runtime metadata
-import { TableApiClient } from '../../api/table-api.client';
+import { AuthError, ConnectionError, TableApiClient } from '../../api/table-api.client';
 import { writeFileAtomic } from '../../common/fs/atomic-write';
 import { hashContent } from '../../common/hashing/content-hash';
 import { slugifyDisplayValue } from '../../common/normalization/slugify';
@@ -96,6 +96,24 @@ export class PullStage {
         await this.globalConfig?.debug(
           `Pull failed for table ${table.name} (scope ${scope.scope}): ${base} | query: ${query} | fields: ${fields.join(',')}`,
         );
+        if (err instanceof AuthError) {
+          throw new Error(`Failed to pull table ${table.name} for scope ${scope.scope}: ${base}`);
+        }
+        // Skip tables that are missing or inaccessible on this instance (any 4xx
+        // other than an auth failure). Authentication failures are surfaced above
+        // because they affect every table, not just one.
+        if (
+          err instanceof ConnectionError &&
+          err.status &&
+          err.status >= 400 &&
+          err.status < 500 &&
+          err.status !== 401
+        ) {
+          await this.globalConfig?.log(
+            `Skipped table ${table.name} for scope ${scope.scope}: ${base}`,
+          );
+          continue;
+        }
         throw new Error(`Failed to pull table ${table.name} for scope ${scope.scope}: ${base}`);
       }
 
